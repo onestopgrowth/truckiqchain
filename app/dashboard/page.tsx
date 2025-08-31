@@ -1,52 +1,62 @@
-import { redirect } from "next/navigation"
-import { createServerClient } from "@/lib/supabase/server"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import Link from "next/link"
+import { redirect } from "next/navigation";
+import { createServerClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import Link from "next/link";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const supabase = await createServerClient()
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
 
-  const { data, error } = await supabase.auth.getUser()
-  if (error || !data?.user) {
-    redirect("/auth/login")
-  }
-
-  // Get user profile to determine role
-  const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single()
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
   if (profile?.role === "capacity_finder") {
-    redirect("/dashboard/freight-finder")
+    redirect("/dashboard/freight-finder");
   }
 
-  // Get carrier profile if user is a carrier
   const { data: carrierProfile } = await supabase
     .from("carrier_profiles")
     .select("*")
-    .eq("user_id", data.user.id)
-    .single()
+    .eq("user_id", user.id)
+    .single();
 
-  // Get capacity calls count if user is a capacity finder
   const { count: capacityCallsCount } = await supabase
     .from("capacity_calls")
     .select("*", { count: "exact", head: true })
-    .eq("user_id", data.user.id)
+    .eq("user_id", user.id);
 
-  const handleSignOut = async () => {
-    "use server"
-    const supabase = await createServerClient()
-    await supabase.auth.signOut()
-    redirect("/auth/login")
-  }
+  const signOut = async () => {
+    "use server";
+    const serverClient = await createServerClient();
+    await serverClient.auth.signOut();
+    redirect("/auth/login");
+  };
 
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">FreightMatch Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {profile?.company_name || data.user.email}</p>
+          <p className="text-muted-foreground">
+            Welcome back, {profile?.company_name || user.email}
+          </p>
         </div>
-        <form action={handleSignOut}>
+        <form action={signOut}>
           <Button variant="outline" type="submit">
             Sign Out
           </Button>
@@ -60,13 +70,15 @@ export default async function DashboardPage() {
             <CardDescription>Account type and permissions</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold capitalize">{profile?.role?.replace("_", " ") || "Not set"}</div>
+            <div className="text-2xl font-bold capitalize">
+              {profile?.role?.replace("_", " ") || "Not set"}
+            </div>
             <p className="text-sm text-muted-foreground mt-2">
               {profile?.role === "carrier"
                 ? "You can create carrier profiles and view capacity calls"
                 : profile?.role === "capacity_finder"
-                  ? "You can post capacity calls and view carrier profiles"
-                  : "Please contact support to set your role"}
+                ? "You can post capacity calls and view carrier profiles"
+                : "Please contact support to set your role"}
             </p>
           </CardContent>
         </Card>
@@ -74,31 +86,39 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Get started with FreightMatch</CardDescription>
+            <CardDescription>Get started</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {profile?.role === "carrier" ? (
               <>
-                <Button asChild className="w-full" variant="default">
+                <Button asChild className="w-full">
                   <Link href="/dashboard/carrier/profile">
-                    {carrierProfile ? "Update Carrier Profile" : "Create Carrier Profile"}
+                    {carrierProfile
+                      ? "Update Carrier Profile"
+                      : "Create Carrier Profile"}
                   </Link>
                 </Button>
-                <Button asChild className="w-full bg-transparent" variant="outline">
-                  <Link href="/dashboard/capacity/browse">Browse Capacity Calls</Link>
+                <Button asChild className="w-full" variant="outline">
+                  <Link href="/dashboard/capacity/browse">
+                    Browse Capacity Calls
+                  </Link>
                 </Button>
               </>
             ) : profile?.role === "capacity_finder" ? (
               <>
-                <Button asChild className="w-full" variant="default">
-                  <Link href="/dashboard/capacity/post">Post Capacity Call</Link>
+                <Button asChild className="w-full">
+                  <Link href="/dashboard/capacity/post">
+                    Post Capacity Call
+                  </Link>
                 </Button>
-                <Button asChild className="w-full bg-transparent" variant="outline">
+                <Button asChild className="w-full" variant="outline">
                   <Link href="/dashboard/matching">Find Matching Carriers</Link>
                 </Button>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">Role not configured. Please contact support.</p>
+              <p className="text-sm text-muted-foreground">
+                Role not configured. Contact support.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -107,31 +127,40 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Carrier Profile</CardTitle>
-              <CardDescription>Your carrier information status</CardDescription>
+              <CardDescription>Status</CardDescription>
             </CardHeader>
             <CardContent>
               {carrierProfile ? (
                 <div className="space-y-2 text-sm">
                   <div>
-                    <span className="font-medium">Equipment:</span> {carrierProfile.equipment_type.replace("_", " ")}
+                    <span className="font-medium">Equipment:</span>{" "}
+                    {carrierProfile.equipment_type.replace("_", " ")}
                   </div>
                   <div>
-                    <span className="font-medium">XP Score:</span> {carrierProfile.xp_score}/100
+                    <span className="font-medium">XP Score:</span>{" "}
+                    {carrierProfile.xp_score}/100
                   </div>
                   <div>
                     <span className="font-medium">Status:</span>{" "}
-                    <span className="capitalize">{carrierProfile.availability_status}</span>
+                    <span className="capitalize">
+                      {carrierProfile.availability_status}
+                    </span>
                   </div>
                   <div>
-                    <span className="font-medium">Location:</span> {carrierProfile.location_city},{" "}
+                    <span className="font-medium">Location:</span>{" "}
+                    {carrierProfile.location_city},{" "}
                     {carrierProfile.location_state}
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground mb-3">No carrier profile created yet</p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    No carrier profile yet
+                  </p>
                   <Button asChild size="sm">
-                    <Link href="/dashboard/carrier/profile">Create Profile</Link>
+                    <Link href="/dashboard/carrier/profile">
+                      Create Profile
+                    </Link>
                   </Button>
                 </div>
               )}
@@ -143,12 +172,16 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle>My Capacity Calls</CardTitle>
-              <CardDescription>Your posted loads status</CardDescription>
+              <CardDescription>Posted loads</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-4">
-                <div className="text-2xl font-bold">{capacityCallsCount || 0}</div>
-                <p className="text-sm text-muted-foreground mb-3">Active loads posted</p>
+                <div className="text-2xl font-bold">
+                  {capacityCallsCount || 0}
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Active loads posted
+                </p>
                 <div className="flex gap-2">
                   <Button asChild size="sm" variant="outline">
                     <Link href="/dashboard/capacity/manage">Manage Loads</Link>
@@ -165,23 +198,25 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Account Info</CardTitle>
-            <CardDescription>Your account details</CardDescription>
+            <CardDescription>Details</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 text-sm">
               <div>
-                <span className="font-medium">Email:</span> {data.user.email}
+                <span className="font-medium">Email:</span> {user.email}
               </div>
               <div>
-                <span className="font-medium">Company:</span> {profile?.company_name || "Not set"}
+                <span className="font-medium">Company:</span>{" "}
+                {profile?.company_name || "Not set"}
               </div>
               <div>
-                <span className="font-medium">Phone:</span> {profile?.phone || "Not set"}
+                <span className="font-medium">Phone:</span>{" "}
+                {profile?.phone || "Not set"}
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
+  );
 }
