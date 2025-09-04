@@ -1,67 +1,119 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { createSupabaseClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createSupabaseClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function SignUpPage() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [role, setRole] = useState<string>("")
-  const [companyName, setCompanyName] = useState("")
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<string>("");
+  const [companyName, setCompanyName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const supabase = createSupabaseClient()
-    setIsLoading(true)
-    setError(null)
+    e.preventDefault();
+    if (isLoading) return;
+    setIsLoading(true);
+    setError(null);
+
+    const emailTrim = email.trim();
+    const companyTrim = companyName.trim();
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match")
-      setIsLoading(false)
-      return
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
     }
-
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      setIsLoading(false);
+      return;
+    }
     if (!role) {
-      setError("Please select your role")
-      setIsLoading(false)
-      return
+      setError("Please select your role");
+      setIsLoading(false);
+      return;
     }
 
     try {
-      const redirectUrl = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/auth/callback`
+      const supabase = createSupabaseClient();
+      const redirectUrl =
+        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+        `${window.location.origin}/auth/callback`;
 
-      const { error } = await supabase.auth.signUp({
-        email,
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: emailTrim,
         password,
         options: {
           emailRedirectTo: redirectUrl,
+          // Storing in user metadata (still need profiles row)
           data: {
             role,
-            company_name: companyName,
+            company_name: companyTrim || null,
           },
         },
-      })
-      if (error) throw error
-      router.push("/auth/signup-success")
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      });
+
+      if (signUpError) throw signUpError;
+
+      // If email confirmation disabled, we get a session now; create profiles row.
+      if (data.session) {
+        await fetch("/auth/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event: "SIGNED_IN", session: data.session }),
+        });
+        // Upsert profile server-side via a lightweight API route (simplest inline call with service cookie not available client-side).
+        const { error: profileError } = await supabase.from("profiles").upsert(
+          {
+            id: data.session.user.id,
+            role,
+            company_name: companyTrim || null,
+          },
+          { onConflict: "id" }
+        );
+        if (profileError) {
+          console.warn("Profile upsert failed", profileError.message);
+        }
+        // Route based on role
+        if (role === "carrier") {
+          router.replace("/onboarding/carrier");
+        } else {
+          router.replace("/dashboard");
+        }
+      } else {
+        // Email confirmation required scenario
+        router.replace("/auth/signup-success");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Signup failed");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
@@ -69,10 +121,12 @@ export default function SignUpPage() {
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">FreightMatch</CardTitle>
-            <CardDescription>Create your freight matching account</CardDescription>
+            <CardDescription>
+              Create your freight matching account
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSignUp}>
+            <form onSubmit={handleSignUp} noValidate>
               <div className="flex flex-col gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="role">I am a</Label>
@@ -81,21 +135,24 @@ export default function SignUpPage() {
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="carrier">Carrier - I have trucks and want to find loads</SelectItem>
+                      <SelectItem value="carrier">
+                        Carrier - I have trucks and want to find loads
+                      </SelectItem>
                       <SelectItem value="capacity_finder">
-                        Capacity Finder - I need to find carriers for loads
+                        Capacity Finder - I need to find carriers
                       </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="company">Company Name</Label>
+                  <Label htmlFor="company">Company Name (optional)</Label>
                   <Input
                     id="company"
                     type="text"
                     placeholder="Your Company LLC"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
+                    maxLength={120}
                   />
                 </div>
                 <div className="grid gap-2">
@@ -103,8 +160,8 @@ export default function SignUpPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your@email.com"
                     required
+                    autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -115,8 +172,10 @@ export default function SignUpPage() {
                     id="password"
                     type="password"
                     required
+                    minLength={8}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
                   />
                 </div>
                 <div className="grid gap-2">
@@ -125,8 +184,10 @@ export default function SignUpPage() {
                     id="confirm-password"
                     type="password"
                     required
+                    minLength={8}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
                   />
                 </div>
                 {error && <p className="text-sm text-destructive">{error}</p>}
@@ -136,7 +197,10 @@ export default function SignUpPage() {
               </div>
               <div className="mt-4 text-center text-sm">
                 Already have an account?{" "}
-                <Link href="/auth/login" className="underline underline-offset-4">
+                <Link
+                  href="/auth/login"
+                  className="underline underline-offset-4"
+                >
                   Sign in
                 </Link>
               </div>
@@ -145,5 +209,5 @@ export default function SignUpPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

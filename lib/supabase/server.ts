@@ -1,30 +1,21 @@
 import { cookies } from "next/headers";
-import { createServerClient as createServerClientLib } from "@supabase/ssr";
+import { createServerClient as createSupabaseServerClient } from "@supabase/ssr";
 
+// Read-only client (Server Components)
 export async function createServerClient() {
-  const store = await cookies();
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  if (!url || !anon) throw new Error("Missing Supabase env vars");
-
-  return createServerClientLib(url, anon, {
-    cookies: {
-      getAll() {
-        return store.getAll().map((c) => ({ name: c.name, value: c.value }));
+  const cookieStore = await cookies(); // TS expects Promise in your setup
+  return createSupabaseServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        // No set/remove here (readonly environment)
+        set() {},
+        remove() {},
       },
-      setAll(list: { name: string; value: string; options?: any }[]) {
-        list.forEach((c) =>
-          store.set({
-            name: c.name,
-            value: c.value,
-            path: "/",
-            httpOnly: true,
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-            ...c.options,
-          })
-        );
-      },
-    },
-  });
+    }
+  );
 }
