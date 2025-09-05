@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteVehicleButton } from "@/components/delete-vehicle-button";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,11 @@ export default async function VehiclesPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
+      <div className="flex justify-end">
+        <Button asChild variant="ghost">
+          <Link href="/dashboard">Back to Dashboard</Link>
+        </Button>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Fleet Vehicles</CardTitle>
@@ -112,7 +118,7 @@ export default async function VehiclesPage() {
             <Input name="make" placeholder="Make" />
             <Input name="model" placeholder="Model" />
             <Input name="trailer_type" placeholder="Trailer Type" />
-            <div className="md:col-span-2">
+            <div className="md:col-span-2 flex justify-end">
               <Button type="submit">Add Vehicle</Button>
             </div>
           </form>

@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,8 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
 
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [docsReady, setDocsReady] = useState(true); // default true; will validate on mount
+  const [checkingDocs, setCheckingDocs] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,16 +124,53 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  // check required documents approval status (client hint only; server enforces)
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setCheckingDocs(true);
+      try {
+        const supabase = createSupabaseClient();
+        const { data: user } = await supabase.auth.getUser();
+        if (!user.user) return;
+        const { data: docs } = await supabase
+          .from("carrier_documents")
+          .select("doc_type,review_status")
+          .eq("user_id", user.user.id)
+          .in("doc_type", ["w9", "coi", "authority"]);
+        const approved = new Set(
+          (docs || [])
+            .filter((d: any) => d.review_status === "approved")
+            .map((d: any) => String(d.doc_type).toLowerCase())
+        );
+        const allMet = ["w9", "coi", "authority"].every((d) =>
+          approved.has(d)
+        );
+        if (active) setDocsReady(allMet);
+      } catch {
+        if (active) setDocsReady(true); // fail open
+      } finally {
+        if (active) setCheckingDocs(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
+    <form
+      onSubmit={handleSubmit}
+      className="grid gap-6 lg:grid-cols-2"
+    >
+      <div className="grid gap-6 md:grid-cols-2 lg:col-span-2">
         <div className="space-y-2">
           <Label htmlFor="equipment_type">Equipment Type</Label>
           <Select
             value={formData.equipment_type}
             onValueChange={(value) => updateFormData("equipment_type", value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-full sm:w-80">
               <SelectValue placeholder="Select equipment type" />
             </SelectTrigger>
             <SelectContent>
@@ -146,27 +185,43 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
 
         <div className="space-y-2">
           <Label htmlFor="availability_status">Availability Status</Label>
-          <Select
-            value={formData.availability_status}
-            onValueChange={(value) =>
-              updateFormData("availability_status", value)
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {availabilityOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2 w-full">
+            <Select
+              value={formData.availability_status}
+              onValueChange={(value) =>
+                updateFormData("availability_status", value)
+              }
+            >
+              <SelectTrigger className="w-full sm:w-80">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availabilityOptions.map((option) => {
+                  const disabled =
+                    option.value === "available" && !docsReady;
+                  return (
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      disabled={disabled}
+                    >
+                      {option.label}
+                      {disabled && " (upload & approve docs first)"}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          {!docsReady && (
+            <p className="text-xs text-amber-600">
+              Complete and get W-9, COI & Authority approved to set Available.
+            </p>
+          )}
         </div>
       </div>
 
-      <div className="space-y-2">
+  <div className="space-y-2 lg:col-span-2">
         <Label>Experience Score: {formData.xp_score}</Label>
         <Slider
           value={[formData.xp_score]}
@@ -181,14 +236,13 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           capacity finders find qualified carriers.
         </p>
       </div>
-
-      <Card>
+  <Card className="lg:col-span-1">
         <CardHeader>
           <CardTitle>Location Information</CardTitle>
           <CardDescription>Your primary operating location</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+        <CardContent className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="location_city">City</Label>
               <Input
@@ -226,7 +280,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
         </CardContent>
       </Card>
 
-      <Card>
+  <Card className="lg:col-span-1">
         <CardHeader>
           <CardTitle>Capacity Information</CardTitle>
           <CardDescription>
@@ -299,7 +353,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
         </CardContent>
       </Card>
 
-      <div className="space-y-2">
+  <div className="space-y-2 lg:col-span-2">
         <Label htmlFor="notes">Additional Notes</Label>
         <Textarea
           id="notes"
@@ -309,8 +363,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           rows={3}
         />
       </div>
-
-      <Card>
+  <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Documents</CardTitle>
           <CardDescription>
@@ -324,11 +377,10 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           </div>
         </CardContent>
       </Card>
+  {error && <p className="text-sm text-destructive lg:col-span-2">{error}</p>}
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      <div className="flex gap-4">
-        <Button type="submit" disabled={isLoading} className="flex-1">
+  <div className="flex gap-4 justify-end lg:col-span-2">
+        <Button type="submit" disabled={isLoading}>
           {isLoading
             ? "Saving..."
             : initialData

@@ -53,6 +53,11 @@ export default async function RoleOnboardingPage() {
               I am a Capacity Finder
             </Button>
           </form>
+          <form method="post" action="/auth/logout" className="pt-2">
+            <Button type="submit" variant="ghost" className="w-full text-xs text-muted-foreground">
+              Sign out
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

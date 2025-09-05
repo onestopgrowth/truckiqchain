@@ -1,252 +1,282 @@
 import { redirect } from "next/navigation";
+// Direct server-side querying (service role) for admin document listing
+import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import Link from "next/link";
-import DashboardUploadArea from "@/components/dashboard-upload-area";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import AdminDocActions from "@/components/admin-doc-actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
 
-  // Auth user
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) redirect("/auth/login");
 
-  // Profile (only needed cols)
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id,role,company_name,phone")
+    .select("id,role,company_name")
     .eq("id", user.id)
     .single();
 
-  if (!profile?.role) redirect("/onboarding/role");
-
-  // Carrier profile (maybe)
   const { data: carrierProfile } = await supabase
     .from("carrier_profiles")
-    .select(
-      "id,dot_number,equipment_type,xp_score,availability_status,location_city,location_state"
-    )
+    .select("id,is_verified")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Capacity finder redirect
-  if (profile.role === "capacity_finder") {
-    redirect("/dashboard/freight-finder");
+  const adminByEmail =
+    user.email === "zenteklabsjohnboy@gmail.com" ||
+    String(process.env.ADMIN_BYPASS_EMAIL ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .includes(user.email as string);
+
+  const role = profile?.role ?? null;
+  if (!role && !adminByEmail) redirect("/onboarding/role");
+
+  // If admin, fetch carrier documents via secure server API (service-role) to bypass RLS
+  let docs: any[] | null = null;
+  let docsError: string | null = null;
+  if (role === "admin" || adminByEmail) {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!serviceKey || !url) {
+      docsError = "Service role key or supabase URL missing in env";
+    } else {
+      try {
+        const adminClient = createClient(url, serviceKey, {
+          auth: { persistSession: false },
+        });
+        // First fetch raw documents (no implicit joins to avoid FK relationship errors)
+        const { data: rawDocs, error: docsErr } = await adminClient
+          .from("carrier_documents")
+          .select(
+            "id,user_id,carrier_profile_id,doc_type,file_name,file_path,file_hash,review_status,created_at"
+          )
+          .order("created_at", { ascending: false });
+        if (docsErr) {
+          docsError = docsErr.message;
+        } else if (rawDocs && rawDocs.length) {
+          const userIds = Array.from(
+            new Set(rawDocs.map((d) => d.user_id).filter(Boolean))
+          );
+          // Fetch related profiles
+          let profilesMap: Record<string, any> = {};
+          if (userIds.length) {
+            const { data: profs } = await adminClient
+              .from("profiles")
+              .select("id,company_name,role")
+              .in("id", userIds as string[]);
+            if (profs) {
+              for (const p of profs) profilesMap[p.id] = p;
+            }
+          }
+          const carrierProfileIds = Array.from(
+            new Set(rawDocs.map((d) => d.carrier_profile_id).filter(Boolean))
+          );
+          let carrierProfilesMap: Record<string, any> = {};
+          if (carrierProfileIds.length) {
+            const { data: cps } = await adminClient
+              .from("carrier_profiles")
+              .select("id,dot_number,user_id")
+              .in("id", carrierProfileIds as string[]);
+            if (cps) {
+              for (const c of cps) carrierProfilesMap[c.id] = c;
+            }
+          }
+          docs = rawDocs.map((d) => ({
+            ...d,
+            profiles: profilesMap[d.user_id] || null,
+            carrier_profiles: d.carrier_profile_id
+              ? carrierProfilesMap[d.carrier_profile_id] || null
+              : null,
+          }));
+        } else {
+          docs = [];
+        }
+      } catch (e: any) {
+        docsError = e?.message || "Unexpected error performing admin query";
+      }
+    }
   }
-
-  // Vehicles count
-  let vehiclesCount = 0;
-  if (profile.role === "carrier" && carrierProfile?.id) {
-    const { count } = await supabase
-      .from("carrier_vehicles")
-      .select("id", { count: "exact", head: true })
-      .eq("carrier_profile_id", carrierProfile.id);
-    vehiclesCount = count ?? 0;
-  }
-
-  // (Optional) capacity calls count (used if you add UI later)
-  const { count: capacityCallsCount } = await supabase
-    .from("capacity_calls")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-
-  const needsCarrierProfile =
-    profile.role === "carrier" && !carrierProfile?.dot_number;
 
   return (
-    <div className="container mx-auto p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
+    <div className="container mx-auto p-6 space-y-8">
+      <div className="flex flex-wrap gap-4 justify-between items-start">
+        <div className="space-y-1">
           <h1 className="text-3xl font-bold">FreightMatch Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {profile.company_name || user.email}
+          <p className="text-muted-foreground text-sm">
+            {profile?.company_name || user.email}
           </p>
         </div>
-        {/* Uses /auth/logout route */}
-        <form method="post" action="/auth/logout">
-          <Button variant="outline" type="submit">
-            Sign Out
-          </Button>
-        </form>
+        <div className="flex items-center gap-4 flex-wrap">
+          <Badge variant="outline" className="text-xs px-3 py-1 rounded-full">
+            {role ?? (adminByEmail ? "admin" : "Not set")}
+          </Badge>
+          {role === "carrier" && carrierProfile?.is_verified && (
+            <Badge className="text-xs px-3 py-1 rounded-full bg-green-600 text-white">
+              Verified
+            </Badge>
+          )}
+          <form method="post" action="/auth/logout">
+            <Button variant="outline" type="submit" size="sm">
+              Sign Out
+            </Button>
+          </form>
+        </div>
       </div>
 
-      {/* Carrier profile completion prompt */}
-      {needsCarrierProfile && (
-        <Card className="mb-8 border-dashed">
-          <CardHeader>
-            <CardTitle>Complete Your Carrier Profile</CardTitle>
-            <CardDescription>
-              Finish your profile to unlock all carrier features.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild>
-              <Link href="/dashboard/carrier/profile">Complete Profile</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Role */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Role</CardTitle>
-            <CardDescription>Account type and permissions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold capitalize">
-              {profile.role.replace("_", " ")}
+      {role === "admin" || adminByEmail ? (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Carrier Documents</h2>
+            <span className="text-xs text-muted-foreground">
+              {docs ? docs.length : 0} total
+            </span>
+          </div>
+          {docsError ? (
+            <div className="p-4 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 rounded-md border border-red-200 dark:border-red-900">
+              Error loading documents: {docsError}
             </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              {profile.role === "carrier"
-                ? "Create carrier profile, manage vehicles, view capacity calls"
-                : "Role not configured"}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Get started</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {profile.role === "carrier" ? (
-              <>
-                <Button asChild className="w-full">
-                  <Link href="/dashboard/carrier/profile">
-                    {carrierProfile
-                      ? "Update Carrier Profile"
-                      : "Create Carrier Profile"}
-                  </Link>
-                </Button>
-                <Button asChild className="w-full" variant="outline">
-                  <Link href="/dashboard/capacity/browse">
-                    Browse Capacity Calls
-                  </Link>
-                </Button>
-                <Button asChild className="w-full" variant="secondary">
-                  <Link href="/dashboard/carrier/vehicles">
-                    Manage Vehicles
-                  </Link>
-                </Button>
-                <DashboardUploadArea />
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Role not configured. Contact support.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Carrier Profile Summary */}
-        {profile.role === "carrier" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Carrier Profile</CardTitle>
-              <CardDescription>Status</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {carrierProfile ? (
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="font-medium">DOT:</span>{" "}
-                    {carrierProfile.dot_number || "—"}
-                  </div>
-                  <div>
-                    <span className="font-medium">Equipment:</span>{" "}
-                    {carrierProfile.equipment_type?.replace("_", " ") || "—"}
-                  </div>
-                  <div>
-                    <span className="font-medium">XP Score:</span>{" "}
-                    {carrierProfile.xp_score ?? "—"}
-                  </div>
-                  <div>
-                    <span className="font-medium">Status:</span>{" "}
-                    <span className="capitalize">
-                      {carrierProfile.availability_status || "—"}
+          ) : docs == null ? (
+            <div className="p-4 text-sm text-muted-foreground">Loading…</div>
+          ) : docs.length === 0 ? (
+            <div className="p-4 text-sm text-muted-foreground">
+              No uploaded documents yet.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {docs.map((d: any) => {
+                const status = String(d.review_status || "").toLowerCase();
+                const statusCls =
+                  status === "approved"
+                    ? "bg-green-100 text-green-700 dark:bg-green-600/20 dark:text-green-300"
+                    : status === "rejected"
+                    ? "bg-red-100 text-red-700 dark:bg-red-600/20 dark:text-red-300"
+                    : "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300";
+                const docType = String(d.doc_type).toUpperCase();
+                const raw = d.file_path as string;
+                let href = raw;
+                if (raw && !raw.startsWith("http")) {
+                  const cleaned = raw.replace(/^\//, "");
+                  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+                  if (base)
+                    href = `${base}/storage/v1/object/public/${cleaned}`;
+                }
+                const carrierName = d.profiles?.company_name || "—";
+                const dot = d.carrier_profiles?.dot_number || "—";
+                return (
+                  <Card
+                    key={d.id}
+                    className="border border-muted/40 group h-full flex flex-col relative"
+                  >
+                    <span
+                      className={`absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide ${statusCls}`}
+                    >
+                      {status || 'pending'}
                     </span>
-                  </div>
+                    <CardHeader className="pb-3 space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <CardTitle
+                            className="text-base font-semibold leading-tight truncate"
+                            title={carrierName}
+                          >
+                            {carrierName}
+                          </CardTitle>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <span className="uppercase tracking-wide font-medium bg-muted px-2 py-0.5 rounded text-[10px]">
+                              {docType}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              DOT:{" "}
+                              <span className="font-medium text-foreground">
+                                {dot}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block text-sm font-medium leading-snug break-words hover:underline"
+                        title={d.file_name}
+                      >
+                        {d.file_name}
+                      </a>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs flex flex-col flex-1">
+                      <div className="flex justify-end gap-2 text-muted-foreground">
+                        <span className="text-xs">Uploaded</span>
+                        <span className="text-foreground">
+                          {new Date(d.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="mt-auto flex justify-end pt-2">
+                        <AdminDocActions
+                          id={d.id}
+                          initialStatus={d.review_status}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      ) : (
+        <section className="space-y-4">
+          {role === "carrier" ? (
+            <>
+              <div className="flex flex-wrap gap-4 text-sm">
+                <Link className="underline" href="/dashboard/carrier/profile">
+                  Carrier Profile
+                </Link>
+                <Link className="underline" href="/dashboard/carrier/vehicles">
+                  Manage Vehicles
+                </Link>
+              </div>
+              {carrierProfile?.is_verified ? (
+                <div className="p-4 border rounded text-sm flex items-center justify-between">
                   <div>
-                    <span className="font-medium">Location:</span>{" "}
-                    {carrierProfile.location_city || "—"},{" "}
-                    {carrierProfile.location_state || ""}
+                    <p className="font-medium">Availability</p>
+                    <p className="text-muted-foreground text-xs">
+                      Set when and where you're available for loads.
+                    </p>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    No carrier profile yet
-                  </p>
-                  <Button asChild size="sm">
-                    <Link href="/dashboard/carrier/profile">
-                      Create Profile
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href="/dashboard/carrier/availability">
+                      Set Availability
                     </Link>
                   </Button>
                 </div>
+              ) : (
+                <div className="p-4 border rounded text-sm bg-amber-50 dark:bg-amber-900/20">
+                  <p className="font-medium mb-1">Verification Pending</p>
+                  <p className="text-xs text-muted-foreground">
+                    Upload and get approval for W9, COI and Authority to unlock
+                    availability broadcasting.
+                  </p>
+                </div>
               )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Account Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Info</CardTitle>
-            <CardDescription>Details</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="font-medium">Email:</span> {user.email}
-              </div>
-              <div>
-                <span className="font-medium">Company:</span>{" "}
-                {profile.company_name || "Not set"}
-              </div>
-              <div>
-                <span className="font-medium">Phone:</span>{" "}
-                {profile.phone || "Not set"}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Vehicle prompt */}
-        {profile.role === "carrier" && vehiclesCount === 0 && (
-          <Card className="md:col-span-2 lg:col-span-3 border-dashed">
-            <CardHeader>
-              <CardTitle>Add Your First Vehicle</CardTitle>
-              <CardDescription>
-                Improve trust & matching accuracy
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Add VIN and trailer details so shippers can evaluate fit.
-              </p>
-              <Button asChild>
-                <Link href="/dashboard/carrier/vehicles">Add Vehicle</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            </>
+          ) : (
+            <Link className="underline" href="/onboarding/role">
+              Set Role
+            </Link>
+          )}
+        </section>
+      )}
     </div>
   );
 }

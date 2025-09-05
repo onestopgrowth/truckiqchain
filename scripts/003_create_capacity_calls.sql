@@ -43,15 +43,11 @@ create table if not exists public.capacity_calls (
   status text not null check (status in ('open', 'assigned', 'in_transit', 'completed', 'cancelled')) default 'open',
   
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  
-  -- Ensure only capacity_finders can create capacity calls
-  constraint capacity_calls_user_role_check check (
-    exists (
-      select 1 from public.profiles p 
-      where p.id = user_id and p.role = 'capacity_finder'
-    )
-  )
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+
+  -- NOTE: Cannot reference another table in a CHECK constraint (was causing error 0A000).
+  -- Role restriction is enforced via RLS policies (capacity_calls_insert_own/update/delete_own)
+  -- which ensure the inserting/updating user has role = 'capacity_finder'.
 );
 
 -- Enable RLS

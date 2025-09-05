@@ -19,9 +19,19 @@ export async function POST(req: Request) {
   } = await sb.auth.getUser();
   if (!user) return NextResponse.redirect(new URL("/auth/login", req.url));
 
+  // Ensure email included to satisfy NOT NULL on first insert
+  const { data: userProfile } = await sb
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+    const userEmail = (user as any)?.email || (userProfile as any)?.email || null;
   const { error } = await sb
     .from("profiles")
-    .upsert({ id: user.id, role }, { onConflict: "id" });
+    .upsert(
+        { id: user.id, role, email: userEmail },
+      { onConflict: "id" }
+    );
   if (error) {
     console.error(error);
     return NextResponse.redirect(

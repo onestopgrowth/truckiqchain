@@ -1,7 +1,7 @@
 import React from "react";
 import { createServerClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { AdminDocActions } from "@/components/admin-doc-actions";
+import AdminDocActions from "@/components/admin-doc-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +22,8 @@ export default async function AdminCarrierDocs() {
   const { data: docs } = await sb
     .from("carrier_documents")
     .select(
-      "id, user_id, carrier_profile_id, doc_type, file_name, file_path, file_hash, review_status, created_at"
+      `id, user_id, carrier_profile_id, doc_type, file_name, file_path, file_hash, review_status, created_at,
+   profiles:profiles(id,company_name,role), carrier_profiles:carrier_profiles(id,dot_number)`
     )
     .order("created_at", { ascending: false });
 
@@ -30,25 +31,42 @@ export default async function AdminCarrierDocs() {
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Carrier Documents (Admin)</h1>
       <div className="grid gap-4">
-        {docs?.map((d) => (
-          <Card key={d.id}>
-            <CardHeader>
-              <CardTitle>
-                {d.doc_type.toUpperCase()} — {d.file_name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-2">Uploaded: {d.created_at}</div>
-              <div className="mb-2">Status: {d.review_status}</div>
-              <AdminDocActions id={d.id} initialStatus={d.review_status} />
-              <div className="mt-2">
-                <a target="_blank" rel="noreferrer" href={d.file_path}>
-                  Open file
-                </a>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {docs == null ? (
+          <div className="p-6 text-sm text-muted-foreground">
+            Could not load documents. Is the `carrier_documents` table created
+            and migrations applied?
+          </div>
+        ) : docs.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground">
+            No uploaded documents yet.
+          </div>
+        ) : (
+          docs.map((d: any) => (
+            <Card key={d.id}>
+              <CardHeader>
+                <CardTitle>
+                  {d.doc_type.toUpperCase()} — {d.file_name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-2">Uploaded: {d.created_at}</div>
+                <div className="mb-2">Status: {d.review_status}</div>
+                <div className="mb-2">
+                  Carrier: {d.profiles?.company_name || d.profiles?.email}
+                </div>
+                <div className="mb-2">
+                  DOT: {d.carrier_profiles?.dot_number || "—"}
+                </div>
+                <AdminDocActions id={d.id} initialStatus={d.review_status} />
+                <div className="mt-2">
+                  <a target="_blank" rel="noreferrer" href={d.file_path}>
+                    Open file
+                  </a>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

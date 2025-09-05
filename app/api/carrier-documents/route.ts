@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createMutableServerClient } from "@/lib/supabase/server-mutable";
 import { createClient } from "@supabase/supabase-js";
+// Emails queued via email_queue now
 
 export const dynamic = "force-dynamic";
 
@@ -302,6 +303,36 @@ export async function POST(req: Request) {
           );
         }
         return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      // Email admins on new upload (best-effort)
+      // Queue admin notification emails
+      try {
+        const { data: admins } = await sb
+          .from('profiles')
+          .select('email')
+          .eq('role', 'admin');
+        const bypassList = String(process.env.ADMIN_BYPASS_EMAIL || '')
+          .split(',')
+          .map(s=>s.trim())
+          .filter(Boolean);
+        const adminEmails = Array.from(new Set([...(admins?.map(a=>a.email).filter(Boolean) || []), ...bypassList]));
+        if (adminEmails.length) {
+          const subject = `New ${docType} document uploaded`;
+          const html = `<p>A new document was uploaded.</p>
+            <ul>
+              <li>User ID: ${user.id}</li>
+              <li>Carrier Profile ID: ${carrierProfile.id}</li>
+              <li>Type: ${docType}</li>
+              <li>Filename: ${file.name}</li>
+              <li>Hash: ${hash.slice(0,12)}...</li>
+              <li>Status: pending</li>
+            </ul>
+            <p>Review it in the admin dashboard.</p>`;
+          await Promise.all(adminEmails.map(e=> sb.from('email_queue').insert({ to_address: e, subject, html })));
+        }
+      } catch (mailErr) {
+        console.error('queue admin upload email failed', mailErr);
       }
 
       return NextResponse.json({ ok: true, url: publicUrl });

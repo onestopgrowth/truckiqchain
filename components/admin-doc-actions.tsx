@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export function AdminDocActions({
   id,
@@ -29,11 +30,23 @@ export function AdminDocActions({
     }
   }
 
+  const statusBadgeClass = cn(
+    "px-2 py-1 rounded text-[10px] font-medium capitalize border",
+    status === "approved" &&
+      "bg-green-100 text-green-700 border-green-300 dark:bg-green-600/20 dark:text-green-300 dark:border-green-700",
+    status === "rejected" &&
+      "bg-red-100 text-red-700 border-red-300 dark:bg-red-600/20 dark:text-red-300 dark:border-red-700",
+    status === "pending" &&
+      "bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-700"
+  );
+
   return (
-    <div className="flex gap-2">
+  <div className="flex flex-wrap gap-2 items-center justify-end w-full">
       <Button
+        variant="success"
         onClick={() => patch("approved")}
         disabled={loading || status === "approved"}
+        size="sm"
       >
         Approve
       </Button>
@@ -41,9 +54,12 @@ export function AdminDocActions({
         variant="destructive"
         onClick={() => patch("rejected")}
         disabled={loading || status === "rejected"}
+        size="sm"
       >
         Reject
       </Button>
     </div>
   );
 }
+
+export default AdminDocActions;
