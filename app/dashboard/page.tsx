@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
+import DashboardUploadArea from "@/components/dashboard-upload-area";
 
 export const dynamic = "force-dynamic";
 
@@ -143,6 +144,7 @@ export default async function DashboardPage() {
                     Manage Vehicles
                   </Link>
                 </Button>
+                <DashboardUploadArea />
               </>
             ) : (
               <p className="text-sm text-muted-foreground">

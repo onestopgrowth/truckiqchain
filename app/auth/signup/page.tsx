@@ -86,17 +86,19 @@ export default function SignUpPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ event: "SIGNED_IN", session: data.session }),
         });
-        // Upsert profile server-side via a lightweight API route (simplest inline call with service cookie not available client-side).
-        const { error: profileError } = await supabase.from("profiles").upsert(
-          {
-            id: data.session.user.id,
-            role,
-            company_name: companyTrim || null,
-          },
-          { onConflict: "id" }
-        );
-        if (profileError) {
-          console.warn("Profile upsert failed", profileError.message);
+        // Upsert profile server-side via API route so cookies / service client can be used
+        try {
+          await fetch("/api/profiles", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: data.session.user.id,
+              role,
+              company_name: companyTrim || null,
+            }),
+          });
+        } catch (err) {
+          console.warn("Profile upsert failed", err);
         }
         // Route based on role
         if (role === "carrier") {

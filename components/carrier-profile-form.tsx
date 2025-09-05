@@ -1,35 +1,49 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createSupabaseClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Slider } from "@/components/ui/slider"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createSupabaseClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import { DocumentUploader } from "@/components/document-uploader";
+import { DocumentsStatus } from "@/components/documents-status";
 
 interface CarrierProfile {
-  id?: string
-  equipment_type: string
-  xp_score: number
-  availability_status: string
-  location_city: string
-  location_state: string
-  location_zip: string
-  capacity_weight?: number
-  capacity_length?: number
-  capacity_width?: number
-  capacity_height?: number
-  notes?: string
+  id?: string;
+  equipment_type: string;
+  xp_score: number;
+  availability_status: string;
+  location_city: string;
+  location_state: string;
+  location_zip: string;
+  capacity_weight?: number;
+  capacity_length?: number;
+  capacity_width?: number;
+  capacity_height?: number;
+  notes?: string;
 }
 
 interface CarrierProfileFormProps {
-  initialData?: CarrierProfile
+  initialData?: CarrierProfile;
 }
 
 const equipmentTypes = [
@@ -42,13 +56,13 @@ const equipmentTypes = [
   { value: "step_deck", label: "Step Deck" },
   { value: "double_drop", label: "Double Drop" },
   { value: "removable_gooseneck", label: "Removable Gooseneck" },
-]
+];
 
 const availabilityOptions = [
   { value: "available", label: "Available" },
   { value: "busy", label: "Busy" },
   { value: "unavailable", label: "Unavailable" },
-]
+];
 
 export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
   const [formData, setFormData] = useState<CarrierProfile>({
@@ -63,60 +77,60 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
     capacity_width: initialData?.capacity_width || undefined,
     capacity_height: initialData?.capacity_height || undefined,
     notes: initialData?.notes || "",
-  })
+  });
 
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const supabase = createSupabaseClient()
-    setIsLoading(true)
-    setError(null)
+    e.preventDefault();
+    const supabase = createSupabaseClient();
+    setIsLoading(true);
+    setError(null);
 
     try {
-      const { data: user } = await supabase.auth.getUser()
-      if (!user.user) throw new Error("Not authenticated")
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error("Not authenticated");
 
       const profileData = {
         user_id: user.user.id,
         ...formData,
+      };
+
+      // Send payload to server API to create/update carrier profile
+      const resp = await fetch("/api/carrier-profiles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileData),
+      });
+      if (!resp.ok) {
+        const body = await resp.json().catch(() => ({}));
+        throw new Error(body?.error || "Failed to save profile");
       }
 
-      if (initialData?.id) {
-        // Update existing profile
-        const { error } = await supabase
-          .from("carrier_profiles")
-          .update(profileData)
-          .eq("id", initialData.id)
-          .eq("user_id", user.user.id)
-        if (error) throw error
-      } else {
-        // Create new profile
-        const { error } = await supabase.from("carrier_profiles").insert(profileData)
-        if (error) throw error
-      }
-
-      router.push("/dashboard")
-      router.refresh()
+      router.push("/dashboard");
+      router.refresh();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred")
+      setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const updateFormData = (field: keyof CarrierProfile, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="equipment_type">Equipment Type</Label>
-          <Select value={formData.equipment_type} onValueChange={(value) => updateFormData("equipment_type", value)}>
+          <Select
+            value={formData.equipment_type}
+            onValueChange={(value) => updateFormData("equipment_type", value)}
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select equipment type" />
             </SelectTrigger>
@@ -134,7 +148,9 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           <Label htmlFor="availability_status">Availability Status</Label>
           <Select
             value={formData.availability_status}
-            onValueChange={(value) => updateFormData("availability_status", value)}
+            onValueChange={(value) =>
+              updateFormData("availability_status", value)
+            }
           >
             <SelectTrigger>
               <SelectValue />
@@ -161,7 +177,8 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           className="w-full"
         />
         <p className="text-sm text-muted-foreground">
-          Rate your experience level from 0 (new) to 100 (expert). This helps capacity finders find qualified carriers.
+          Rate your experience level from 0 (new) to 100 (expert). This helps
+          capacity finders find qualified carriers.
         </p>
       </div>
 
@@ -177,7 +194,9 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
               <Input
                 id="location_city"
                 value={formData.location_city}
-                onChange={(e) => updateFormData("location_city", e.target.value)}
+                onChange={(e) =>
+                  updateFormData("location_city", e.target.value)
+                }
                 placeholder="Chicago"
                 required
               />
@@ -187,7 +206,9 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
               <Input
                 id="location_state"
                 value={formData.location_state}
-                onChange={(e) => updateFormData("location_state", e.target.value)}
+                onChange={(e) =>
+                  updateFormData("location_state", e.target.value)
+                }
                 placeholder="IL"
                 required
               />
@@ -208,7 +229,9 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
       <Card>
         <CardHeader>
           <CardTitle>Capacity Information</CardTitle>
-          <CardDescription>Your equipment specifications (optional)</CardDescription>
+          <CardDescription>
+            Your equipment specifications (optional)
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -219,7 +242,10 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
                 type="number"
                 value={formData.capacity_weight || ""}
                 onChange={(e) =>
-                  updateFormData("capacity_weight", e.target.value ? Number.parseInt(e.target.value) : undefined)
+                  updateFormData(
+                    "capacity_weight",
+                    e.target.value ? Number.parseInt(e.target.value) : undefined
+                  )
                 }
                 placeholder="80000"
               />
@@ -231,7 +257,10 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
                 type="number"
                 value={formData.capacity_length || ""}
                 onChange={(e) =>
-                  updateFormData("capacity_length", e.target.value ? Number.parseInt(e.target.value) : undefined)
+                  updateFormData(
+                    "capacity_length",
+                    e.target.value ? Number.parseInt(e.target.value) : undefined
+                  )
                 }
                 placeholder="53"
               />
@@ -243,7 +272,10 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
                 type="number"
                 value={formData.capacity_width || ""}
                 onChange={(e) =>
-                  updateFormData("capacity_width", e.target.value ? Number.parseInt(e.target.value) : undefined)
+                  updateFormData(
+                    "capacity_width",
+                    e.target.value ? Number.parseInt(e.target.value) : undefined
+                  )
                 }
                 placeholder="8.5"
               />
@@ -255,7 +287,10 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
                 type="number"
                 value={formData.capacity_height || ""}
                 onChange={(e) =>
-                  updateFormData("capacity_height", e.target.value ? Number.parseInt(e.target.value) : undefined)
+                  updateFormData(
+                    "capacity_height",
+                    e.target.value ? Number.parseInt(e.target.value) : undefined
+                  )
                 }
                 placeholder="13.6"
               />
@@ -275,16 +310,39 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
         />
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Documents</CardTitle>
+          <CardDescription>
+            Upload W-9, COI, and Operating Authority
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <DocumentsStatus />
+            <DocumentUploader />
+          </div>
+        </CardContent>
+      </Card>
+
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <div className="flex gap-4">
         <Button type="submit" disabled={isLoading} className="flex-1">
-          {isLoading ? "Saving..." : initialData ? "Update Profile" : "Create Profile"}
+          {isLoading
+            ? "Saving..."
+            : initialData
+            ? "Update Profile"
+            : "Create Profile"}
         </Button>
-        <Button type="button" variant="outline" onClick={() => router.push("/dashboard")}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/dashboard")}
+        >
           Cancel
         </Button>
       </div>
     </form>
-  )
+  );
 }

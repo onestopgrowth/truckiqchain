@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DeleteVehicleButton } from "@/components/delete-vehicle-button";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,9 @@ export default async function VehiclesPage() {
                       <td className="py-2 pr-4">{v.make || "—"}</td>
                       <td className="py-2 pr-4">{v.model || "—"}</td>
                       <td className="py-2 pr-4">{v.trailer_type || "—"}</td>
+                      <td className="py-2 pr-4">
+                        <DeleteVehicleButton id={v.id} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

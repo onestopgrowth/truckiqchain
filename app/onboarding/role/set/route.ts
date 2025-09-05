@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createMutableServerClient } from "@/lib/supabase/server";
+import { createMutableServerClient } from "@/lib/supabase/server-mutable";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const sb = createMutableServerClient();
+  const sb = await createMutableServerClient();
   const {
     data: { user },
   } = await sb.auth.getUser();

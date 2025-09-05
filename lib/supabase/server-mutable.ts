@@ -1,17 +1,18 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-export function createMutableServerClient() {
-  const store = cookies();
+// Mutable server client (route handlers / server actions)
+export async function createMutableServerClient() {
+  const store = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll: () =>
-          store.getAll().map(c => ({ name: c.name, value: c.value })),
+          store.getAll().map((c) => ({ name: c.name, value: c.value })),
         setAll: (all) => {
-          all.forEach(c =>
+          all.forEach((c) =>
             store.set({
               name: c.name,
               value: c.value,
