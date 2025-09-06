@@ -50,6 +50,7 @@ const sqlFiles = [
   "020_replace_recursive_profiles_policy.sql",
   "021_disable_profiles_rls.sql",
   "022_update_signup_trigger.sql",
+  "023_add_mc_dot_to_profiles.sql",
 ];
 const dir = path.resolve(__dirname);
 
@@ -60,7 +61,14 @@ const dir = path.resolve(__dirname);
     console.error("No POSTGRES_URL found in .env");
     process.exit(2);
   }
-  const client = new Client({ connectionString: connection });
+  // Enable SSL for remote DBs (e.g., Supabase); allow self-signed when necessary
+  const isLocal = /localhost|127\.0\.0\.1/.test(connection);
+  const client = new Client({
+    connectionString: connection,
+    ssl: isLocal
+      ? undefined
+      : { rejectUnauthorized: false },
+  });
   try {
     await client.connect();
     for (const f of sqlFiles) {

@@ -9,12 +9,14 @@ set search_path = public
 as $$
 begin
   begin
-    insert into public.profiles (id, email, role, company_name)
+    insert into public.profiles (id, email, role, company_name, dot_number, mc_number)
     values (
       new.id,
       coalesce(new.email, ''),
       coalesce(new.raw_user_meta_data ->> 'role', 'carrier'), -- default to carrier
-      coalesce(new.raw_user_meta_data ->> 'company_name', null)
+      coalesce(new.raw_user_meta_data ->> 'company_name', null),
+      coalesce(new.raw_user_meta_data ->> 'dot_number', null),
+      coalesce(new.raw_user_meta_data ->> 'mc_number', null)
     )
     on conflict (id) do nothing;
   exception when others then

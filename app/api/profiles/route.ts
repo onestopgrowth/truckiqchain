@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { id, role, company_name } = body;
+  const { id, role, company_name, dot_number, mc_number } = body;
     if (!id || !role)
       return NextResponse.json({ error: "missing" }, { status: 400 });
 
@@ -22,7 +22,10 @@ export async function POST(req: Request) {
 
     const { error } = await sb
       .from("profiles")
-      .upsert({ id, role, company_name, email }, { onConflict: "id" });
+      .upsert(
+        { id, role, company_name, email, dot_number, mc_number },
+        { onConflict: "id" }
+      );
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });

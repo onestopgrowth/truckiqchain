@@ -29,6 +29,8 @@ export default function SignUpPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState<string>("");
   const [companyName, setCompanyName] = useState("");
+  const [dotNumber, setDotNumber] = useState("");
+  const [mcNumber, setMcNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -57,6 +59,25 @@ export default function SignUpPage() {
       setIsLoading(false);
       return;
     }
+    if (!companyTrim) {
+      setError("Company name is required");
+      setIsLoading(false);
+      return;
+    }
+    if (role === "carrier") {
+      const dotTrim = dotNumber.trim();
+      const mcTrim = mcNumber.trim();
+      if (!dotTrim) {
+        setError("DOT number is required for carriers");
+        setIsLoading(false);
+        return;
+      }
+      if (!mcTrim) {
+        setError("MC number is required for carriers");
+        setIsLoading(false);
+        return;
+      }
+    }
 
     try {
       const supabase = createSupabaseClient();
@@ -72,7 +93,9 @@ export default function SignUpPage() {
           // Storing in user metadata (still need profiles row)
           data: {
             role,
-            company_name: companyTrim || null,
+                company_name: companyTrim || null,
+                dot_number: role === "carrier" ? dotNumber.trim() : null,
+                mc_number: role === "carrier" ? mcNumber.trim() : null,
           },
         },
       });
@@ -96,6 +119,8 @@ export default function SignUpPage() {
               role,
               company_name: companyTrim || null,
               email: emailTrim,
+              dot_number: role === "carrier" ? dotNumber.trim() : undefined,
+              mc_number: role === "carrier" ? mcNumber.trim() : undefined,
             }),
           });
         } catch (err) {
@@ -148,7 +173,7 @@ export default function SignUpPage() {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="company">Company Name (optional)</Label>
+                    <Label htmlFor="company">Company Name</Label>
                   <Input
                     id="company"
                     type="text"
@@ -156,8 +181,37 @@ export default function SignUpPage() {
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     maxLength={120}
+                      required
                   />
                 </div>
+                  {role === "carrier" && (
+                    <>
+                      <div className="grid gap-2">
+                        <Label htmlFor="dot">USDOT Number</Label>
+                        <Input
+                          id="dot"
+                          type="text"
+                          placeholder="e.g. 1234567"
+                          value={dotNumber}
+                          onChange={(e) => setDotNumber(e.target.value)}
+                          maxLength={20}
+                          required
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="mc">MC Number</Label>
+                        <Input
+                          id="mc"
+                          type="text"
+                          placeholder="e.g. MC-123456"
+                          value={mcNumber}
+                          onChange={(e) => setMcNumber(e.target.value)}
+                          maxLength={20}
+                          required
+                        />
+                      </div>
+                    </>
+                  )}
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
