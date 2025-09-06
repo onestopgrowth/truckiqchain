@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
-
 async function LoadsList({
   searchParams,
 }: {
@@ -63,7 +62,8 @@ async function LoadsList({
               </div>
             </div>
             <CardDescription>
-              {l.origin_city}, {l.origin_state} → {l.destination_city}, {l.destination_state}
+              {l.origin_city}, {l.origin_state} → {l.destination_city},{" "}
+              {l.destination_state}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 text-xs text-muted-foreground">

@@ -309,14 +309,19 @@ export async function POST(req: Request) {
       // Queue admin notification emails
       try {
         const { data: admins } = await sb
-          .from('profiles')
-          .select('email')
-          .eq('role', 'admin');
-        const bypassList = String(process.env.ADMIN_BYPASS_EMAIL || '')
-          .split(',')
-          .map(s=>s.trim())
+          .from("profiles")
+          .select("email")
+          .eq("role", "admin");
+        const bypassList = String(process.env.ADMIN_BYPASS_EMAIL || "")
+          .split(",")
+          .map((s) => s.trim())
           .filter(Boolean);
-        const adminEmails = Array.from(new Set([...(admins?.map(a=>a.email).filter(Boolean) || []), ...bypassList]));
+        const adminEmails = Array.from(
+          new Set([
+            ...(admins?.map((a) => a.email).filter(Boolean) || []),
+            ...bypassList,
+          ])
+        );
         if (adminEmails.length) {
           const subject = `New ${docType} document uploaded`;
           const html = `<p>A new document was uploaded.</p>
@@ -325,14 +330,18 @@ export async function POST(req: Request) {
               <li>Carrier Profile ID: ${carrierProfile.id}</li>
               <li>Type: ${docType}</li>
               <li>Filename: ${file.name}</li>
-              <li>Hash: ${hash.slice(0,12)}...</li>
+              <li>Hash: ${hash.slice(0, 12)}...</li>
               <li>Status: pending</li>
             </ul>
             <p>Review it in the admin dashboard.</p>`;
-          await Promise.all(adminEmails.map(e=> sb.from('email_queue').insert({ to_address: e, subject, html })));
+          await Promise.all(
+            adminEmails.map((e) =>
+              sb.from("email_queue").insert({ to_address: e, subject, html })
+            )
+          );
         }
       } catch (mailErr) {
-        console.error('queue admin upload email failed', mailErr);
+        console.error("queue admin upload email failed", mailErr);
       }
 
       return NextResponse.json({ ok: true, url: publicUrl });

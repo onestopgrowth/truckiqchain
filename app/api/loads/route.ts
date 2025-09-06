@@ -44,9 +44,7 @@ export async function POST(req: Request) {
     } as any;
 
     // Insert without selecting the row back to avoid triggering SELECT RLS policies
-    const { error } = await sb
-      .from("loads")
-      .insert(insert);
+    const { error } = await sb.from("loads").insert(insert);
     if (error)
       return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ ok: true }, { status: 201 });

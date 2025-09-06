@@ -30,18 +30,25 @@ export function middleware(req: NextRequest) {
   }
 
   // Rate limit selected API mutation routes
-  if (pathname.startsWith('/api/') && req.method !== 'GET') {
-  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'anon';
+  if (pathname.startsWith("/api/") && req.method !== "GET") {
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "anon";
     const key = `${ip}`;
     const now = Date.now();
     const entry = rlMap[key] || { count: 0, ts: now };
     if (now - entry.ts > WINDOW_MS) {
-      entry.count = 0; entry.ts = now;
+      entry.count = 0;
+      entry.ts = now;
     }
     entry.count += 1;
     rlMap[key] = entry;
     if (entry.count > MAX_REQ) {
-      return new NextResponse(JSON.stringify({ error: 'rate_limited' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+      return new NextResponse(JSON.stringify({ error: "rate_limited" }), {
+        status: 429,
+        headers: { "Content-Type": "application/json" },
+      });
     }
   }
 

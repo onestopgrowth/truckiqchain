@@ -56,8 +56,8 @@ export default async function VehiclesPage() {
   if (!carrierProfile) {
     return (
       <div className="container mx-auto p-6 space-y-8">
-  <ShowToastFromSearch />
-  <ProfileRequiredToast redirectTo="/dashboard/carrier/profile" />
+        <ShowToastFromSearch />
+        <ProfileRequiredToast redirectTo="/dashboard/carrier/profile" />
         <div className="flex items-center justify-between mb-2">
           <div>
             <h1 className="text-3xl font-bold">Manage Vehicles</h1>
@@ -71,15 +71,19 @@ export default async function VehiclesPage() {
           <CardHeader>
             <CardTitle>Carrier profile required</CardTitle>
             <CardDescription>
-              You need to create your carrier profile before you can manage vehicles.
+              You need to create your carrier profile before you can manage
+              vehicles.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              Your carrier profile contains your company info, equipment, and documents.
+              Your carrier profile contains your company info, equipment, and
+              documents.
             </p>
             <Button asChild>
-              <Link href="/dashboard/carrier/profile">Create Carrier Profile</Link>
+              <Link href="/dashboard/carrier/profile">
+                Create Carrier Profile
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -144,7 +148,7 @@ export default async function VehiclesPage() {
         </CardContent>
       </Card>
 
-  <Card id="add">
+      <Card id="add">
         <CardHeader>
           <CardTitle>Add Vehicle</CardTitle>
           <CardDescription>Provide key identifiers</CardDescription>

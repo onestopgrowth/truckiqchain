@@ -25,13 +25,10 @@ export async function POST(req: Request) {
     .select("id")
     .eq("id", user.id)
     .maybeSingle();
-    const userEmail = (user as any)?.email || (userProfile as any)?.email || null;
+  const userEmail = (user as any)?.email || (userProfile as any)?.email || null;
   const { error } = await sb
     .from("profiles")
-    .upsert(
-        { id: user.id, role, email: userEmail },
-      { onConflict: "id" }
-    );
+    .upsert({ id: user.id, role, email: userEmail }, { onConflict: "id" });
   if (error) {
     console.error(error);
     return NextResponse.redirect(

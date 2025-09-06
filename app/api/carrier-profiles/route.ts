@@ -21,29 +21,28 @@ export async function POST(req: Request) {
       const alreadyAvailable = current?.availability_status === "available";
       const changingToAvailable = !alreadyAvailable;
       if (changingToAvailable) {
-      const { data: docs, error: docsErr } = await sb
-        .from("carrier_documents")
-        .select("doc_type,review_status")
-        .eq("user_id", body.user_id)
-        .in("doc_type", REQUIRED_DOC_TYPES)
-        .in("review_status", ["approved"]);
-      if (docsErr)
-        return NextResponse.json({ error: docsErr.message }, { status: 500 });
-      const approved = new Set(
-        (docs || []).map((d: any) => String(d.doc_type).toLowerCase())
-      );
-      const allMet = REQUIRED_DOC_TYPES.every((d) => approved.has(d));
-      if (!allMet) {
-        return NextResponse.json(
-          {
-            error:
-              "incomplete_documents",
-            message:
-              "You must have approved W-9, COI, and Operating Authority before setting status to Available.",
-          },
-          { status: 400 }
+        const { data: docs, error: docsErr } = await sb
+          .from("carrier_documents")
+          .select("doc_type,review_status")
+          .eq("user_id", body.user_id)
+          .in("doc_type", REQUIRED_DOC_TYPES)
+          .in("review_status", ["approved"]);
+        if (docsErr)
+          return NextResponse.json({ error: docsErr.message }, { status: 500 });
+        const approved = new Set(
+          (docs || []).map((d: any) => String(d.doc_type).toLowerCase())
         );
-      }
+        const allMet = REQUIRED_DOC_TYPES.every((d) => approved.has(d));
+        if (!allMet) {
+          return NextResponse.json(
+            {
+              error: "incomplete_documents",
+              message:
+                "You must have approved W-9, COI, and Operating Authority before setting status to Available.",
+            },
+            { status: 400 }
+          );
+        }
       }
     }
 

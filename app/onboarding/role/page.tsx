@@ -32,7 +32,9 @@ export default async function RoleOnboardingPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Select Your Role</CardTitle>
-          <CardDescription>Choose how you will use FreightMatch</CardDescription>
+          <CardDescription>
+            Choose how you will use FreightMatch
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form
@@ -40,7 +42,12 @@ export default async function RoleOnboardingPage() {
             action="/onboarding/role/set"
             className="flex flex-col gap-3"
           >
-            <Button type="submit" name="role" value="carrier" className="w-full">
+            <Button
+              type="submit"
+              name="role"
+              value="carrier"
+              className="w-full"
+            >
               I am a Carrier
             </Button>
             <Button
@@ -54,7 +61,11 @@ export default async function RoleOnboardingPage() {
             </Button>
           </form>
           <form method="post" action="/auth/logout" className="pt-2">
-            <Button type="submit" variant="ghost" className="w-full text-xs text-muted-foreground">
+            <Button
+              type="submit"
+              variant="ghost"
+              className="w-full text-xs text-muted-foreground"
+            >
               Sign out
             </Button>
           </form>

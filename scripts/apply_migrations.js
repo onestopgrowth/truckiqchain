@@ -57,6 +57,8 @@ const sqlFiles = [
   "027_reinstate_profiles_rls.sql",
   "028_break_recursive_rls.sql",
   "029_simplify_loads_policies.sql",
+  "030_owner_invite_policy.sql",
+  "031_add_pod_url.sql",
 ];
 const dir = path.resolve(__dirname);
 
@@ -71,9 +73,7 @@ const dir = path.resolve(__dirname);
   const isLocal = /localhost|127\.0\.0\.1/.test(connection);
   const client = new Client({
     connectionString: connection,
-    ssl: isLocal
-      ? undefined
-      : { rejectUnauthorized: false },
+    ssl: isLocal ? undefined : { rejectUnauthorized: false },
   });
   try {
     await client.connect();
@@ -87,7 +87,11 @@ const dir = path.resolve(__dirname);
       } catch (e) {
         // Continue on duplicate / already exists errors to keep idempotent
         const msg = String(e.message || e);
-        if (/already exists/i.test(msg) || /duplicate key/i.test(msg) || /42710/.test(msg)) {
+        if (
+          /already exists/i.test(msg) ||
+          /duplicate key/i.test(msg) ||
+          /42710/.test(msg)
+        ) {
           console.warn("Skipped (exists)", f, "->", msg.split("\n")[0]);
           continue;
         }

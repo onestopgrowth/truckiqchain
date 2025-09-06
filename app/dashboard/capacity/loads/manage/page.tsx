@@ -8,6 +8,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +30,12 @@ export default async function ManageLoadsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-  <h1 className="text-3xl font-bold">Manage Loads</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Manage Loads</h1>
+        <Button asChild variant="ghost">
+          <Link href="/dashboard/capacity">Back to Dashboard</Link>
+        </Button>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Your Loads</CardTitle>
@@ -38,7 +44,7 @@ export default async function ManageLoadsPage() {
         <CardContent className="space-y-4">
           <Link
             href="/dashboard/capacity/loads/post"
-    className="text-sm underline block mb-3"
+            className="text-sm underline block mb-3"
           >
             Post New Load
           </Link>
@@ -77,6 +83,7 @@ export default async function ManageLoadsPage() {
                         </Badge>
                       ))}
                     </div>
+                    {l.status === "open" && <CancelLoad id={l.id} />}
                   </div>
                 </div>
               </div>
@@ -85,5 +92,29 @@ export default async function ManageLoadsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+("use client");
+import * as React from "react";
+
+function CancelLoad({ id }: { id: string }) {
+  const [pending, start] = (React as any).useTransition
+    ? (React as any).useTransition()
+    : [false, (fn: any) => fn()];
+  async function cancel() {
+    start(async () => {
+      await fetch(`/api/loads/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "cancel" }),
+      });
+      // naive refresh
+      location.reload();
+    });
+  }
+  return (
+    <Button size="sm" variant="outline" disabled={pending} onClick={cancel}>
+      Cancel
+    </Button>
   );
 }

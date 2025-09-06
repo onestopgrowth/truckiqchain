@@ -93,9 +93,9 @@ export default function SignUpPage() {
           // Storing in user metadata (still need profiles row)
           data: {
             role,
-                company_name: companyTrim || null,
-                dot_number: role === "carrier" ? dotNumber.trim() : null,
-                mc_number: role === "carrier" ? mcNumber.trim() : null,
+            company_name: companyTrim || null,
+            dot_number: role === "carrier" ? dotNumber.trim() : null,
+            mc_number: role === "carrier" ? mcNumber.trim() : null,
           },
         },
       });
@@ -173,7 +173,7 @@ export default function SignUpPage() {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                    <Label htmlFor="company">Company Name</Label>
+                  <Label htmlFor="company">Company Name</Label>
                   <Input
                     id="company"
                     type="text"
@@ -181,37 +181,37 @@ export default function SignUpPage() {
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     maxLength={120}
-                      required
+                    required
                   />
                 </div>
-                  {role === "carrier" && (
-                    <>
-                      <div className="grid gap-2">
-                        <Label htmlFor="dot">USDOT Number</Label>
-                        <Input
-                          id="dot"
-                          type="text"
-                          placeholder="e.g. 1234567"
-                          value={dotNumber}
-                          onChange={(e) => setDotNumber(e.target.value)}
-                          maxLength={20}
-                          required
-                        />
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="mc">MC Number</Label>
-                        <Input
-                          id="mc"
-                          type="text"
-                          placeholder="e.g. MC-123456"
-                          value={mcNumber}
-                          onChange={(e) => setMcNumber(e.target.value)}
-                          maxLength={20}
-                          required
-                        />
-                      </div>
-                    </>
-                  )}
+                {role === "carrier" && (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="dot">USDOT Number</Label>
+                      <Input
+                        id="dot"
+                        type="text"
+                        placeholder="e.g. 1234567"
+                        value={dotNumber}
+                        onChange={(e) => setDotNumber(e.target.value)}
+                        maxLength={20}
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="mc">MC Number</Label>
+                      <Input
+                        id="mc"
+                        type="text"
+                        placeholder="e.g. MC-123456"
+                        value={mcNumber}
+                        onChange={(e) => setMcNumber(e.target.value)}
+                        maxLength={20}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="grid gap-2">
                   <Label htmlFor="email">Email</Label>
                   <Input

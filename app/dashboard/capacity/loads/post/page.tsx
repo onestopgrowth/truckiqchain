@@ -49,7 +49,9 @@ export default function PostLoadPage() {
           <h1 className="text-3xl font-bold">Post Load</h1>
           <p className="text-muted-foreground">Provide lane and requirements</p>
         </div>
-  <Button asChild variant="ghost"><Link href="/dashboard">Back to Dashboard</Link></Button>
+        <Button asChild variant="ghost">
+          <Link href="/dashboard">Back to Dashboard</Link>
+        </Button>
       </div>
       <Card>
         <CardContent>

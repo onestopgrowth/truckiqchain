@@ -86,11 +86,15 @@ export async function PATCH(
     if (carrierProfile?.email) {
       const docTypeLabel = String(beforeDoc.doc_type).toUpperCase();
       const subject = `Document ${review_status}: ${beforeDoc.file_name}`;
-      const html = `<p>Hello ${carrierProfile.company_name || ''},</p>
-        <p>Your document <strong>${beforeDoc.file_name}</strong> (${docTypeLabel}) has been <strong>${review_status}</strong>.</p>
+      const html = `<p>Hello ${carrierProfile.company_name || ""},</p>
+        <p>Your document <strong>${
+          beforeDoc.file_name
+        }</strong> (${docTypeLabel}) has been <strong>${review_status}</strong>.</p>
         <p>If you have questions, please reply to this email.</p>
         <p>Regards,<br/>FreightMatch Admin</p>`;
-      await targetClient.from('email_queue').insert({ to_address: carrierProfile.email, subject, html });
+      await targetClient
+        .from("email_queue")
+        .insert({ to_address: carrierProfile.email, subject, html });
     }
 
     // attempt carrier verification if approved document

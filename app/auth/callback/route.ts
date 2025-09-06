@@ -14,7 +14,8 @@ export async function GET(req: Request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => store.getAll().map((c) => ({ name: c.name, value: c.value })),
+        getAll: () =>
+          store.getAll().map((c) => ({ name: c.name, value: c.value })),
         setAll: (arr: { name: string; value: string; options?: any }[]) =>
           arr.forEach((c) =>
             store.set({
@@ -34,15 +35,21 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   try {
     // Supabase will call back with a code; exchange it for a session and persist cookies
-    const { error } = await supabase.auth.exchangeCodeForSession(url.toString() as any);
+    const { error } = await supabase.auth.exchangeCodeForSession(
+      url.toString() as any
+    );
     if (error) {
       console.error("exchangeCodeForSession error", error.message);
-      return NextResponse.redirect(new URL("/auth/login?error=confirmation_failed", req.url));
+      return NextResponse.redirect(
+        new URL("/auth/login?error=confirmation_failed", req.url)
+      );
     }
     return NextResponse.redirect(new URL("/dashboard", req.url));
   } catch (e: any) {
     console.error("auth callback GET error", e?.message || e);
-    return NextResponse.redirect(new URL("/auth/login?error=callback_error", req.url));
+    return NextResponse.redirect(
+      new URL("/auth/login?error=callback_error", req.url)
+    );
   }
 }
 

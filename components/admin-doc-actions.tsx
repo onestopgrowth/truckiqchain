@@ -41,7 +41,7 @@ export function AdminDocActions({
   );
 
   return (
-  <div className="flex flex-wrap gap-2 items-center justify-end w-full">
+    <div className="flex flex-wrap gap-2 items-center justify-end w-full">
       <Button
         variant="success"
         onClick={() => patch("approved")}

@@ -4,7 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AdminDocActions from "@/components/admin-doc-actions";
 
@@ -133,7 +139,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-  {role === "admin" || adminByEmail ? (
+      {role === "admin" || adminByEmail ? (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Carrier Documents</h2>
@@ -180,7 +186,7 @@ export default async function DashboardPage() {
                     <span
                       className={`absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wide ${statusCls}`}
                     >
-                      {status || 'pending'}
+                      {status || "pending"}
                     </span>
                     <CardHeader className="pb-3 space-y-2">
                       <div className="flex items-start justify-between gap-3">
@@ -244,8 +250,16 @@ export default async function DashboardPage() {
                 </Link>
                 <Link
                   className="underline"
-                  href={carrierProfile ? "/dashboard/carrier/vehicles#add" : "/dashboard/carrier/vehicles?needsProfile=1"}
-                  title={carrierProfile ? "Manage Vehicles" : "Create your carrier profile first"}
+                  href={
+                    carrierProfile
+                      ? "/dashboard/carrier/vehicles#add"
+                      : "/dashboard/carrier/vehicles?needsProfile=1"
+                  }
+                  title={
+                    carrierProfile
+                      ? "Manage Vehicles"
+                      : "Create your carrier profile first"
+                  }
                 >
                   Manage Vehicles
                 </Link>
@@ -279,47 +293,79 @@ export default async function DashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Post a Load</CardTitle>
-                  <CardDescription>Create a shipment to match with carriers</CardDescription>
+                  <CardDescription>
+                    Create a shipment to match with carriers
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button asChild><Link href="/dashboard/capacity/loads/post">Post Load</Link></Button>
+                  <Button asChild>
+                    <Link href="/dashboard/capacity/loads/post">Post Load</Link>
+                  </Button>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>See Matches</CardTitle>
-                  <CardDescription>Browse verified carriers by fit</CardDescription>
+                  <CardDescription>
+                    Browse verified carriers by fit
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button variant="outline" asChild><Link href="/dashboard/capacity/matching">Find Carriers</Link></Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/dashboard/capacity/matching">
+                      Find Carriers
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>Invite / Approve</CardTitle>
-                  <CardDescription>Invite carriers and approve requests</CardDescription>
+                  <CardDescription>
+                    Invite carriers and approve requests
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="flex gap-2">
-                  <Button size="sm" asChild><Link href="/dashboard/capacity/matching">Invite Carrier</Link></Button>
-                  <Button size="sm" variant="outline" asChild><Link href="/dashboard/capacity/owner/assignments">Approve</Link></Button>
+                  <Button size="sm" asChild>
+                    <Link href="/dashboard/capacity/matching">
+                      Invite Carrier
+                    </Link>
+                  </Button>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link href="/dashboard/capacity/owner/assignments">
+                      Approve
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader>
                   <CardTitle>Track Status</CardTitle>
-                  <CardDescription>Accepted → In Transit → Delivered</CardDescription>
+                  <CardDescription>
+                    Accepted → In Transit → Delivered
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button variant="outline" asChild><Link href="/dashboard/capacity/owner/assignments">View Assignments</Link></Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/dashboard/capacity/owner/assignments">
+                      View Assignments
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
               <Card className="md:col-span-2 lg:col-span-1">
                 <CardHeader>
                   <CardTitle>Receive POD & Close</CardTitle>
-                  <CardDescription>Review POD and complete the load</CardDescription>
+                  <CardDescription>
+                    Review POD and complete the load
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button variant="outline" asChild><Link href="/dashboard/capacity/owner/assignments">Close Load</Link></Button>
+                  <Button variant="outline" asChild>
+                    <Link href="/dashboard/capacity/owner/assignments">
+                      Close Load
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             </div>

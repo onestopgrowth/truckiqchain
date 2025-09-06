@@ -69,11 +69,11 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
   const [formData, setFormData] = useState<CarrierProfile>({
     equipment_type: initialData?.equipment_type || "",
     xp_score: initialData?.xp_score || 50,
-  availability_status: initialData?.availability_status || "busy",
+    availability_status: initialData?.availability_status || "busy",
     location_city: initialData?.location_city || "",
     location_state: initialData?.location_state || "",
     location_zip: initialData?.location_zip || "",
-  photo_url: (initialData as any)?.photo_url || "",
+    photo_url: (initialData as any)?.photo_url || "",
     capacity_weight: initialData?.capacity_weight || undefined,
     capacity_length: initialData?.capacity_length || undefined,
     capacity_width: initialData?.capacity_width || undefined,
@@ -122,7 +122,9 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
 
       // Best-effort sync of DOT/MC identifiers from profiles
       try {
-        await fetch('/api/carrier-profiles/sync-identifiers', { method: 'POST' });
+        await fetch("/api/carrier-profiles/sync-identifiers", {
+          method: "POST",
+        });
       } catch {}
 
       router.push("/dashboard");
@@ -157,9 +159,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
             .filter((d: any) => d.review_status === "approved")
             .map((d: any) => String(d.doc_type).toLowerCase())
         );
-        const allMet = ["w9", "coi", "authority"].every((d) =>
-          approved.has(d)
-        );
+        const allMet = ["w9", "coi", "authority"].every((d) => approved.has(d));
         if (active) setDocsReady(allMet);
       } catch {
         if (active) setDocsReady(true); // fail open
@@ -173,10 +173,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
   }, []);
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="grid gap-6 lg:grid-cols-2"
-    >
+    <form onSubmit={handleSubmit} className="grid gap-6 lg:grid-cols-2">
       <div className="grid gap-6 md:grid-cols-2 lg:col-span-2">
         <div className="space-y-2">
           <Label htmlFor="equipment_type">Equipment Type</Label>
@@ -211,8 +208,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
               </SelectTrigger>
               <SelectContent>
                 {availabilityOptions.map((option) => {
-                  const disabled =
-                    option.value === "available" && !docsReady;
+                  const disabled = option.value === "available" && !docsReady;
                   return (
                     <SelectItem
                       key={option.value}
@@ -235,7 +231,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
         </div>
       </div>
 
-  <div className="space-y-2 lg:col-span-2">
+      <div className="space-y-2 lg:col-span-2">
         <Label>Experience Score: {formData.xp_score}</Label>
         <Slider
           value={[formData.xp_score]}
@@ -250,7 +246,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           capacity finders find qualified carriers.
         </p>
       </div>
-  <Card className="lg:col-span-1">
+      <Card className="lg:col-span-1">
         <CardHeader>
           <CardTitle>Location Information</CardTitle>
           <CardDescription>Your primary operating location</CardDescription>
@@ -260,7 +256,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
             <Label htmlFor="photo_url">Profile Photo URL</Label>
             <Input
               id="photo_url"
-              value={formData.photo_url || ''}
+              value={formData.photo_url || ""}
               onChange={(e) => updateFormData("photo_url", e.target.value)}
               placeholder="https://.../logo.png"
             />
@@ -303,7 +299,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
         </CardContent>
       </Card>
 
-  <Card className="lg:col-span-1">
+      <Card className="lg:col-span-1">
         <CardHeader>
           <CardTitle>Capacity Information</CardTitle>
           <CardDescription>
@@ -376,7 +372,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
         </CardContent>
       </Card>
 
-  <div className="space-y-2 lg:col-span-2">
+      <div className="space-y-2 lg:col-span-2">
         <Label htmlFor="notes">Additional Notes</Label>
         <Textarea
           id="notes"
@@ -386,7 +382,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           rows={3}
         />
       </div>
-  <Card className="lg:col-span-2">
+      <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle>Documents</CardTitle>
           <CardDescription>
@@ -400,9 +396,11 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           </div>
         </CardContent>
       </Card>
-  {error && <p className="text-sm text-destructive lg:col-span-2">{error}</p>}
+      {error && (
+        <p className="text-sm text-destructive lg:col-span-2">{error}</p>
+      )}
 
-  <div className="flex gap-4 justify-end lg:col-span-2">
+      <div className="flex gap-4 justify-end lg:col-span-2">
         <Button type="submit" disabled={isLoading}>
           {isLoading
             ? "Saving..."
