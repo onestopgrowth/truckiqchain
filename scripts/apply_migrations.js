@@ -51,6 +51,10 @@ const sqlFiles = [
   "021_disable_profiles_rls.sql",
   "022_update_signup_trigger.sql",
   "023_add_mc_dot_to_profiles.sql",
+  "024_add_dot_mc_to_carrier_profiles.sql",
+  "025_add_profile_photo.sql",
+  "026_create_assignment_waypoints.sql",
+  "027_reinstate_profiles_rls.sql",
 ];
 const dir = path.resolve(__dirname);
 

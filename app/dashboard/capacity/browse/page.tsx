@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
-export default async function BrowseCapacityCallsPage() {
+export default async function BrowseCapacityCallsPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
   const supabase = await createServerClient()
 
   const { data, error } = await supabase.auth.getUser()
@@ -16,8 +16,17 @@ export default async function BrowseCapacityCallsPage() {
   // Get user profile
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single()
 
-  // Get all open capacity calls
-  const { data: capacityCalls } = await supabase
+  // Get all open capacity calls with light server-side filters (query params)
+  const getStr = (k: string) => {
+    const v = searchParams?.[k]
+    if (Array.isArray(v)) return v[0]
+    return v
+  }
+  const eq = (v?: string | null) => (v && v.trim()) ? v.trim() : undefined;
+  const eqEquip = eq(getStr('equipment'));
+  const minRate = getStr('min_rate') ? Number(getStr('min_rate')) : undefined;
+
+  let query = supabase
     .from("capacity_calls")
     .select(`
       *,
@@ -27,7 +36,9 @@ export default async function BrowseCapacityCallsPage() {
       )
     `)
     .eq("status", "open")
-    .order("created_at", { ascending: false })
+  if (eqEquip) query = query.eq('equipment_needed', eqEquip)
+  if (minRate) query = query.gte('total_rate', minRate)
+  const { data: capacityCalls } = await query.order("created_at", { ascending: false })
 
   return (
     <div className="container mx-auto p-6">
@@ -50,6 +61,17 @@ export default async function BrowseCapacityCallsPage() {
         </Card>
       ) : (
         <div className="grid gap-6">
+          <form className="flex gap-2 items-end" method="GET">
+            <div>
+              <label className="block text-xs text-muted-foreground">Equipment</label>
+              <input name="equipment" className="border rounded px-2 py-1 text-sm" placeholder="flatbed" defaultValue={getStr('equipment') || ''} />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground">Min Rate ($)</label>
+              <input name="min_rate" type="number" className="border rounded px-2 py-1 text-sm" defaultValue={getStr('min_rate') || ''} />
+            </div>
+            <Button type="submit" variant="outline" size="sm">Filter</Button>
+          </form>
           {capacityCalls.map((call) => (
             <Card key={call.id} className="hover:shadow-md transition-shadow">
               <CardHeader>

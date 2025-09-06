@@ -244,7 +244,7 @@ export default async function DashboardPage() {
                 </Link>
                 <Link
                   className="underline"
-                  href={carrierProfile ? "/dashboard/carrier/vehicles#add" : "/dashboard/carrier/profile"}
+                  href={carrierProfile ? "/dashboard/carrier/vehicles#add" : "/dashboard/carrier/vehicles?needsProfile=1"}
                   title={carrierProfile ? "Manage Vehicles" : "Create your carrier profile first"}
                 >
                   Manage Vehicles

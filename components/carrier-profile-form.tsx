@@ -35,6 +35,7 @@ interface CarrierProfile {
   location_city: string;
   location_state: string;
   location_zip: string;
+  photo_url?: string;
   capacity_weight?: number;
   capacity_length?: number;
   capacity_width?: number;
@@ -72,6 +73,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
     location_city: initialData?.location_city || "",
     location_state: initialData?.location_state || "",
     location_zip: initialData?.location_zip || "",
+  photo_url: (initialData as any)?.photo_url || "",
     capacity_weight: initialData?.capacity_weight || undefined,
     capacity_length: initialData?.capacity_length || undefined,
     capacity_width: initialData?.capacity_width || undefined,
@@ -117,6 +119,11 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
         const body = await resp.json().catch(() => ({}));
         throw new Error(body?.error || "Failed to save profile");
       }
+
+      // Best-effort sync of DOT/MC identifiers from profiles
+      try {
+        await fetch('/api/carrier-profiles/sync-identifiers', { method: 'POST' });
+      } catch {}
 
       router.push("/dashboard");
       router.refresh();
@@ -249,6 +256,15 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           <CardDescription>Your primary operating location</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="space-y-2">
+            <Label htmlFor="photo_url">Profile Photo URL</Label>
+            <Input
+              id="photo_url"
+              value={formData.photo_url || ''}
+              onChange={(e) => updateFormData("photo_url", e.target.value)}
+              placeholder="https://.../logo.png"
+            />
+          </div>
           <div className="grid gap-3 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="location_city">City</Label>

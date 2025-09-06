@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteVehicleButton } from "@/components/delete-vehicle-button";
 import Link from "next/link";
+import { ProfileRequiredToast } from "@/components/profile-required-toast";
+import { ShowToastFromSearch } from "@/components/show-toast-from-search";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,7 @@ async function addVehicle(formData: FormData) {
     .select("id")
     .eq("user_id", user.id)
     .single();
-  if (!carrierProfile) redirect("/onboarding/carrier");
+  if (!carrierProfile) redirect("/dashboard/carrier/profile");
 
   await sb.from("carrier_vehicles").insert({
     carrier_profile_id: carrierProfile.id,
@@ -51,7 +53,39 @@ export default async function VehiclesPage() {
     .select("id")
     .eq("user_id", user.id)
     .single();
-  if (!carrierProfile) redirect("/onboarding/carrier");
+  if (!carrierProfile) {
+    return (
+      <div className="container mx-auto p-6 space-y-8">
+  <ShowToastFromSearch />
+  <ProfileRequiredToast redirectTo="/dashboard/carrier/profile" />
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h1 className="text-3xl font-bold">Manage Vehicles</h1>
+            <p className="text-muted-foreground">Add and manage your fleet</p>
+          </div>
+          <Button asChild variant="ghost">
+            <Link href="/dashboard">Back to Dashboard</Link>
+          </Button>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Carrier profile required</CardTitle>
+            <CardDescription>
+              You need to create your carrier profile before you can manage vehicles.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              Your carrier profile contains your company info, equipment, and documents.
+            </p>
+            <Button asChild>
+              <Link href="/dashboard/carrier/profile">Create Carrier Profile</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const { data: vehicles } = await sb
     .from("carrier_vehicles")
