@@ -49,6 +49,7 @@ const sqlFiles = [
   "019_fix_profiles_policy.sql",
   "020_replace_recursive_profiles_policy.sql",
   "021_disable_profiles_rls.sql",
+  "022_update_signup_trigger.sql",
 ];
 const dir = path.resolve(__dirname);
 

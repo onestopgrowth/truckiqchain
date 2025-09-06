@@ -68,7 +68,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
   const [formData, setFormData] = useState<CarrierProfile>({
     equipment_type: initialData?.equipment_type || "",
     xp_score: initialData?.xp_score || 50,
-    availability_status: initialData?.availability_status || "available",
+  availability_status: initialData?.availability_status || "busy",
     location_city: initialData?.location_city || "",
     location_state: initialData?.location_state || "",
     location_zip: initialData?.location_zip || "",
@@ -95,9 +95,16 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
 
+      // Prevent accidental 'available' before docs are approved
+      const effectiveStatus =
+        formData.availability_status === "available" && !docsReady
+          ? "busy"
+          : formData.availability_status;
+
       const profileData = {
         user_id: user.user.id,
         ...formData,
+        availability_status: effectiveStatus,
       };
 
       // Send payload to server API to create/update carrier profile

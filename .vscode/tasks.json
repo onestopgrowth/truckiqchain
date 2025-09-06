@@ -1,0 +1,36 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "apply-db-migrations",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$env:NODE_TLS_REJECT_UNAUTHORIZED=0; node scripts/apply_migrations.js"
+			],
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "apply-db-migrations",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$env:NODE_TLS_REJECT_UNAUTHORIZED=0; node scripts/apply_migrations.js"
+			],
+			"isBackground": false,
+			"group": "build"
+		}
+	]
+}

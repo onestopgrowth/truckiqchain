@@ -10,8 +10,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const sb = await createMutableServerClient();
     const { id } = body;
-    // Guard: if attempting to set availability_status to 'available', ensure required docs approved
+    // Guard: only when setting availability_status to 'available'
     if (body?.availability_status === "available" && body?.user_id) {
+      // check current status to avoid blocking initial profile creation where it's already available (we coerce on client, but double-check)
+      const { data: current } = await sb
+        .from("carrier_profiles")
+        .select("availability_status")
+        .eq("user_id", body.user_id)
+        .maybeSingle();
+      const alreadyAvailable = current?.availability_status === "available";
+      const changingToAvailable = !alreadyAvailable;
+      if (changingToAvailable) {
       const { data: docs, error: docsErr } = await sb
         .from("carrier_documents")
         .select("doc_type,review_status")
@@ -34,6 +43,7 @@ export async function POST(req: Request) {
           },
           { status: 400 }
         );
+      }
       }
     }
 

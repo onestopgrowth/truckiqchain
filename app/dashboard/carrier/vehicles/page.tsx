@@ -106,7 +106,7 @@ export default async function VehiclesPage() {
         </CardContent>
       </Card>
 
-      <Card>
+  <Card id="add">
         <CardHeader>
           <CardTitle>Add Vehicle</CardTitle>
           <CardDescription>Provide key identifiers</CardDescription>

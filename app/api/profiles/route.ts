@@ -11,9 +11,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "missing" }, { status: 400 });
 
     const sb = await createMutableServerClient();
+    const { data: userRes } = await sb.auth.getUser();
+    const email = userRes?.user?.email || body?.email;
+    if (!email) {
+      return NextResponse.json(
+        { error: "email_required" },
+        { status: 400 }
+      );
+    }
+
     const { error } = await sb
       .from("profiles")
-      .upsert({ id, role, company_name }, { onConflict: "id" });
+      .upsert({ id, role, company_name, email }, { onConflict: "id" });
     if (error)
       return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ ok: true });

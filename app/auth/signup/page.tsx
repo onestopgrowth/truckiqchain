@@ -95,6 +95,7 @@ export default function SignUpPage() {
               id: data.session.user.id,
               role,
               company_name: companyTrim || null,
+              email: emailTrim,
             }),
           });
         } catch (err) {

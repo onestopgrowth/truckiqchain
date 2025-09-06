@@ -8,14 +8,19 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, role, company_name)
-  values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data ->> 'role', 'carrier'), -- default to carrier
-    coalesce(new.raw_user_meta_data ->> 'company_name', null)
-  )
-  on conflict (id) do nothing;
+  begin
+    insert into public.profiles (id, email, role, company_name)
+    values (
+      new.id,
+      coalesce(new.email, ''),
+      coalesce(new.raw_user_meta_data ->> 'role', 'carrier'), -- default to carrier
+      coalesce(new.raw_user_meta_data ->> 'company_name', null)
+    )
+    on conflict (id) do nothing;
+  exception when others then
+    -- Avoid blocking signup if profile insert fails for any reason
+    null;
+  end;
 
   return new;
 end;
