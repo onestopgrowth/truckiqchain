@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AdminDocActions from "@/components/admin-doc-actions";
 
@@ -133,7 +133,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {role === "admin" || adminByEmail ? (
+  {role === "admin" || adminByEmail ? (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold">Carrier Documents</h2>
@@ -274,6 +274,55 @@ export default async function DashboardPage() {
                 </div>
               )}
             </>
+          ) : role === "capacity_finder" ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Post a Load</CardTitle>
+                  <CardDescription>Create a shipment to match with carriers</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild><Link href="/dashboard/capacity/loads/post">Post Load</Link></Button>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>See Matches</CardTitle>
+                  <CardDescription>Browse verified carriers by fit</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" asChild><Link href="/dashboard/capacity/matching">Find Carriers</Link></Button>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invite / Approve</CardTitle>
+                  <CardDescription>Invite carriers and approve requests</CardDescription>
+                </CardHeader>
+                <CardContent className="flex gap-2">
+                  <Button size="sm" asChild><Link href="/dashboard/capacity/matching">Invite Carrier</Link></Button>
+                  <Button size="sm" variant="outline" asChild><Link href="/dashboard/capacity/owner/assignments">Approve</Link></Button>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Track Status</CardTitle>
+                  <CardDescription>Accepted → In Transit → Delivered</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" asChild><Link href="/dashboard/capacity/owner/assignments">View Assignments</Link></Button>
+                </CardContent>
+              </Card>
+              <Card className="md:col-span-2 lg:col-span-1">
+                <CardHeader>
+                  <CardTitle>Receive POD & Close</CardTitle>
+                  <CardDescription>Review POD and complete the load</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" asChild><Link href="/dashboard/capacity/owner/assignments">Close Load</Link></Button>
+                </CardContent>
+              </Card>
+            </div>
           ) : (
             <Link className="underline" href="/onboarding/role">
               Set Role

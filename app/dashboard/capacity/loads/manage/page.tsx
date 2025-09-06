@@ -29,6 +29,7 @@ export default async function ManageLoadsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+  <h1 className="text-3xl font-bold">Manage Loads</h1>
       <Card>
         <CardHeader>
           <CardTitle>Your Loads</CardTitle>
@@ -37,7 +38,7 @@ export default async function ManageLoadsPage() {
         <CardContent className="space-y-4">
           <Link
             href="/dashboard/capacity/loads/post"
-            className="text-sm underline"
+    className="text-sm underline block mb-3"
           >
             Post New Load
           </Link>

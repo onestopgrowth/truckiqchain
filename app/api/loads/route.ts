@@ -14,6 +14,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
     const body = await req.json();
 
+    if (!body.title || String(body.title).trim().length === 0) {
+      return NextResponse.json({ error: "title_required" }, { status: 400 });
+    }
+
     const insert = {
       user_id: user.id,
       title: body.title || null,
@@ -39,14 +43,13 @@ export async function POST(req: Request) {
       notes: body.notes || null,
     } as any;
 
-    const { error, data } = await sb
+    // Insert without selecting the row back to avoid triggering SELECT RLS policies
+    const { error } = await sb
       .from("loads")
-      .insert(insert)
-      .select("id")
-      .single();
+      .insert(insert);
     if (error)
       return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ id: data.id });
+    return NextResponse.json({ ok: true }, { status: 201 });
   } catch (e: any) {
     console.error(e);
     return NextResponse.json({ error: "server_error" }, { status: 500 });

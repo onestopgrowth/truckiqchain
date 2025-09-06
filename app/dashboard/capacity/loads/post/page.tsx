@@ -1,16 +1,12 @@
 "use client";
 import { useState } from "react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function PostLoadPage() {
   const [loading, setLoading] = useState(false);
@@ -48,18 +44,25 @@ export default function PostLoadPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <h1 className="text-3xl font-bold">Post Load</h1>
+          <p className="text-muted-foreground">Provide lane and requirements</p>
+        </div>
+  <Button asChild variant="ghost"><Link href="/dashboard">Back to Dashboard</Link></Button>
+      </div>
       <Card>
-        <CardHeader>
-          <CardTitle>Post Load</CardTitle>
-          <CardDescription>Provide lane & requirements</CardDescription>
-        </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="grid md:grid-cols-3 gap-4 text-sm">
-            <Input
-              name="title"
-              placeholder="Title (optional)"
-              className="md:col-span-3"
-            />
+            <div className="grid gap-1.5 md:col-span-3">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                name="title"
+                required
+                placeholder="e.g., Dallas, TX → Atlanta, GA — 10k lbs Dry Van"
+              />
+            </div>
             <Input required name="origin_city" placeholder="Origin City" />
             <Input required name="origin_state" placeholder="Origin State" />
             <Input name="origin_zip" placeholder="Origin ZIP" />
@@ -108,7 +111,7 @@ export default function PostLoadPage() {
               className="md:col-span-3"
             />
             {error && <div className="text-red-600 md:col-span-3">{error}</div>}
-            <div className="md:col-span-3">
+            <div className="md:col-span-3 flex justify-end">
               <Button type="submit" disabled={loading}>
                 {loading ? "Posting..." : "Post Load"}
               </Button>

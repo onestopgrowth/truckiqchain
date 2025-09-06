@@ -55,6 +55,8 @@ const sqlFiles = [
   "025_add_profile_photo.sql",
   "026_create_assignment_waypoints.sql",
   "027_reinstate_profiles_rls.sql",
+  "028_break_recursive_rls.sql",
+  "029_simplify_loads_policies.sql",
 ];
 const dir = path.resolve(__dirname);
 
