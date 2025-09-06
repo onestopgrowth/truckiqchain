@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import AdminDocActions from "@/components/admin-doc-actions";
+import CarrierRecentAssignments from "../../components/carrier-recent-assignments";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,20 @@ export default async function DashboardPage() {
     .select("id,is_verified")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  // If carrier, fetch a few recent assignments to surface on the dashboard
+  let carrierAssignments: any[] = [];
+  if ((profile?.role ?? null) === "carrier") {
+    const { data: carr } = await supabase
+      .from("assignments")
+      .select(
+        `id,status,created_at,load_id,loads ( title,origin_city,origin_state,destination_city,destination_state )`
+      )
+      .eq("carrier_user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    carrierAssignments = carr || [];
+  }
 
   const adminByEmail =
     user.email === "zenteklabsjohnboy@gmail.com" ||
@@ -287,6 +302,26 @@ export default async function DashboardPage() {
                   </p>
                 </div>
               )}
+
+              {/* Recent Assignments - full width card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Assignments</CardTitle>
+                  <CardDescription>
+                    Requested, accepted, and booked
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CarrierRecentAssignments items={carrierAssignments as any} />
+                  <div className="mt-3 flex justify-end">
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href="/dashboard/carrier/assignments">
+                        Go to Assignments
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </>
           ) : role === "capacity_finder" ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
