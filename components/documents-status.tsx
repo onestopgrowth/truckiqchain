@@ -12,14 +12,17 @@ type DocRecord = {
 
 const REQUIRED = ["w9", "coi", "authority"];
 
-export function DocumentsStatus() {
+
+export function DocumentsStatus({ refreshKey = 0 }: { refreshKey?: number }) {
   const [docs, setDocs] = useState<Record<string, DocRecord | null>>({});
   const [loading, setLoading] = useState(false);
 
   async function fetchDocs() {
     setLoading(true);
     try {
-      const resp = await fetch("/api/carrier-documents");
+      // Wait 500ms to allow backend to update after upload
+      await new Promise((res) => setTimeout(res, 500));
+      const resp = await fetch("/api/carrier-documents?ts=" + Date.now());
       if (!resp.ok) return;
       const body = await resp.json();
       const list: DocRecord[] = body.data || [];
@@ -36,7 +39,8 @@ export function DocumentsStatus() {
 
   useEffect(() => {
     fetchDocs();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
 
   const allUploaded = REQUIRED.every((r) => !!docs[r]);
   const allApproved = REQUIRED.every(
@@ -45,10 +49,12 @@ export function DocumentsStatus() {
 
   return (
     <div className="space-y-3">
+      {loading && (
+        <div className="text-sm text-blue-600">Refreshing documents...</div>
+      )}
       <div className="flex items-center gap-3">
         {allApproved ? (
           <Badge variant="default">
-            {" "}
             <CheckCircle className="w-4 h-4 text-white" /> Verified Carrier
           </Badge>
         ) : allUploaded ? (

@@ -36,7 +36,8 @@ export async function POST(req: Request) {
       const hash = await sha256Hex(arrayBuffer);
 
       // create a storage path: carrier-docs/<hash>-<originalname>
-      const filename = `${hash}-${file.name}`.replace(/\s+/g, "_");
+  let filename = `${hash}-${file.name}`.replace(/\s+/g, "_");
+  console.log("Initial upload filename:", filename);
 
       // get carrier_profile
       const { data: carrierProfile } = await sb
@@ -75,6 +76,7 @@ export async function POST(req: Request) {
             contentType: file.type || "application/octet-stream",
             upsert: false,
           });
+        console.log("Upload result for filename:", filename, uploadResult?.error);
       } catch (e) {
         console.error("storage.upload threw", e);
         // try alternate upload using Buffer (Node)
@@ -187,15 +189,17 @@ export async function POST(req: Request) {
         const conflict =
           detailsObj.uploadResult?.error?.statusCode === "409" ||
           detailsObj.uploadResult?.error?.status === 409;
+        let retrySuccess = false;
         if (conflict) {
           const suffix = `-${Date.now()}-${Math.random()
             .toString(36)
             .slice(2, 8)}`;
           const uniqueFilename = filename.replace(/(\.[^.]*)?$/, `${suffix}$1`);
-          console.warn(
-            "File already exists, retrying with unique filename",
-            uniqueFilename
-          );
+          if (uniqueFilename === filename) {
+            console.error("Unique filename is the same as original! Aborting retry.");
+            return NextResponse.json({ error: "unique_filename_not_unique", filename, uniqueFilename }, { status: 500 });
+          }
+          filename = uniqueFilename; // <--- store the actual filename used
           try {
             const retry = await storageClient
               .from(bucket)
@@ -204,44 +208,22 @@ export async function POST(req: Request) {
                 upsert: false,
               });
             if (retry.error) {
-              // try Buffer fallback
-              try {
-                // @ts-ignore
-                const buf = Buffer.from(arrayBuffer);
-                const retryAlt = await storageClient
-                  .from(bucket)
-                  .upload(uniqueFilename, buf, {
-                    contentType: file.type || "application/octet-stream",
-                    upsert: false,
-                  });
-                if (retryAlt.error) {
-                  console.error("retry unique upload failed", retryAlt);
-                  return NextResponse.json(
-                    {
-                      error: "upload_failed",
-                      details: {
-                        initial: detailsObj,
-                        retry: JSON.parse(JSON.stringify(retryAlt)),
-                      },
-                    },
-                    { status: 500 }
-                  );
-                }
-                uploadResult = retryAlt;
-              } catch (e3) {
-                console.error("retry unique upload alt threw", e3);
-                return NextResponse.json(
-                  {
-                    error: "upload_failed",
-                    details: { initial: detailsObj, retryError: String(e3) },
+              // Log and return the full error details
+              console.error("retry unique upload failed", retry);
+              return NextResponse.json(
+                {
+                  error: "upload_failed",
+                  details: {
+                    initial: detailsObj,
+                    retry: JSON.parse(JSON.stringify(retry)),
                   },
-                  { status: 500 }
-                );
-              }
-            } else {
-              uploadResult = retry;
+                },
+                { status: 500 }
+              );
             }
-            // continue with finalResult below
+            // If retry.error is falsy (null/undefined/false), treat as success
+            uploadResult = retry;
+            retrySuccess = true;
           } catch (uniqueEx) {
             console.error("unique filename upload threw", uniqueEx);
             return NextResponse.json(
@@ -256,14 +238,17 @@ export async function POST(req: Request) {
             );
           }
         }
-
-        return NextResponse.json(
-          { error: "upload_failed", details: detailsObj },
-          { status: 500 }
-        );
+        // Only return a 500 if both original and retry failed
+        if (conflict && !retrySuccess) {
+          return NextResponse.json(
+            { error: "upload_failed", details: detailsObj },
+            { status: 500 }
+          );
+        }
       }
 
-      const finalResult = uploadResult?.data ? uploadResult : altResult;
+  // Prefer uploadResult if present, otherwise altResult
+  const finalResult = uploadResult && uploadResult.data ? uploadResult : (altResult && altResult.data ? altResult : uploadResult);
 
       // Use admin client to get public URL if available, otherwise fall back
       const urlClient: any = adminClient ? adminClient.storage : sb.storage;
@@ -275,7 +260,7 @@ export async function POST(req: Request) {
         carrier_profile_id: carrierProfile.id,
         user_id: user.id,
         doc_type: docType,
-        file_name: file.name,
+        file_name: filename, // store the actual filename used
         file_path: finalResult.data.path,
         file_hash: hash,
         file_size: arrayBuffer.byteLength,

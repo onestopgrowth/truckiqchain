@@ -85,6 +85,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [docsReady, setDocsReady] = useState(true); // default true; will validate on mount
   const [checkingDocs, setCheckingDocs] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -382,20 +383,22 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           rows={3}
         />
       </div>
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle>Documents</CardTitle>
-          <CardDescription>
-            Upload W-9, COI, and Operating Authority
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <DocumentsStatus />
-            <DocumentUploader />
-          </div>
-        </CardContent>
-      </Card>
+      {initialData && (
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Documents</CardTitle>
+            <CardDescription>
+              Upload W-9, COI, and Operating Authority
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+                <DocumentsStatus refreshKey={refreshKey} />
+              <DocumentUploader onUploaded={() => setRefreshKey(k => k + 1)} />
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {error && (
         <p className="text-sm text-destructive lg:col-span-2">{error}</p>
       )}

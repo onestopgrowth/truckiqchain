@@ -16,21 +16,39 @@ export async function POST(req: Request) {
   const sb = await createMutableServerClient();
   const {
     data: { user },
+    error: userError,
   } = await sb.auth.getUser();
-  if (!user) return NextResponse.redirect(new URL("/auth/login", req.url));
+  if (!user || userError) {
+    console.error("User fetch error:", userError);
+    return NextResponse.redirect(new URL("/auth/login", req.url));
+  }
 
   // Ensure email included to satisfy NOT NULL on first insert
-  const { data: userProfile } = await sb
-    .from("profiles")
-    .select("id")
-    .eq("id", user.id)
-    .maybeSingle();
-  const userEmail = (user as any)?.email || (userProfile as any)?.email || null;
-  const { error } = await sb
+  let userEmail = (user as any)?.email;
+  if (!userEmail) {
+    // Try to fetch from profile if not present
+    const { data: userProfile, error: profileError } = await sb
+      .from("profiles")
+      .select("email")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileError) {
+      console.error("Profile fetch error:", profileError);
+    }
+    userEmail = userProfile?.email || null;
+  }
+  if (!userEmail) {
+    console.error("No email found for user", user.id);
+    return NextResponse.redirect(
+      new URL("/onboarding/role?error=no_email", req.url)
+    );
+  }
+
+  const { error: upsertError } = await sb
     .from("profiles")
     .upsert({ id: user.id, role, email: userEmail }, { onConflict: "id" });
-  if (error) {
-    console.error(error);
+  if (upsertError) {
+    console.error("Upsert error:", upsertError);
     return NextResponse.redirect(
       new URL("/onboarding/role?error=save", req.url)
     );
