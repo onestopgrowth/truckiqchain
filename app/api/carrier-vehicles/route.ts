@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       data: { user },
     } = await sb.auth.getUser();
     if (!user) {
-      console.error('No user found in POST /api/carrier-vehicles');
+      console.error("No user found in POST /api/carrier-vehicles");
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
     }
 
@@ -23,7 +23,11 @@ export async function POST(req: Request) {
       .eq("user_id", user.id)
       .single();
     if (cpErr || !carrierProfile) {
-      console.error('No carrier profile found or error:', cpErr, carrierProfile);
+      console.error(
+        "No carrier profile found or error:",
+        cpErr,
+        carrierProfile
+      );
       return NextResponse.json(
         { error: "no_carrier_profile" },
         { status: 400 }
@@ -38,16 +42,16 @@ export async function POST(req: Request) {
       model: (body.model as string)?.trim() || null,
       trailer_type: (body.trailer_type as string)?.trim() || null,
     };
-    console.log('Inserting vehicle:', insert);
+    console.log("Inserting vehicle:", insert);
 
     const { error } = await sb.from("carrier_vehicles").insert(insert);
     if (error) {
-      console.error('Error inserting vehicle:', error);
+      console.error("Error inserting vehicle:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('Server error in POST /api/carrier-vehicles:', err);
+    console.error("Server error in POST /api/carrier-vehicles:", err);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

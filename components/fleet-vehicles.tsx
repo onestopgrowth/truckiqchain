@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteVehicleButton } from "@/components/delete-vehicle-button";
@@ -17,14 +23,22 @@ export default function FleetVehicles() {
   };
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ vin: "", year: "", make: "", model: "", trailer_type: "" });
+  const [form, setForm] = useState({
+    vin: "",
+    year: "",
+    make: "",
+    model: "",
+    trailer_type: "",
+  });
   const [adding, setAdding] = useState(false);
 
   const fetchVehicles = async () => {
     setLoading(true);
     const sb = createSupabaseClient();
-    const { data: { user } } = await sb.auth.getUser();
-    console.log('Supabase user in fetchVehicles:', user);
+    const {
+      data: { user },
+    } = await sb.auth.getUser();
+    console.log("Supabase user in fetchVehicles:", user);
     if (!user) {
       setVehicles([]);
       setLoading(false);
@@ -35,7 +49,7 @@ export default function FleetVehicles() {
       .select("id")
       .eq("user_id", user.id)
       .single();
-    console.log('Carrier profile:', carrierProfile);
+    console.log("Carrier profile:", carrierProfile);
     const profile: any = carrierProfile;
     if (!profile) {
       setVehicles([]);
@@ -47,7 +61,7 @@ export default function FleetVehicles() {
       .select("id, vin, year, make, model, trailer_type")
       .eq("carrier_profile_id", profile.id)
       .order("created_at");
-    console.log('Vehicles fetched:', vehicles);
+    console.log("Vehicles fetched:", vehicles);
     setVehicles((vehicles as Vehicle[]) || []);
     setLoading(false);
   };
@@ -124,13 +138,42 @@ export default function FleetVehicles() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAdd} className="grid gap-4 md:grid-cols-2">
-            <Input name="vin" placeholder="VIN (17 chars)" pattern=".{17}" value={form.vin} onChange={handleChange} />
-            <Input name="year" placeholder="Year" inputMode="numeric" value={form.year} onChange={handleChange} />
-            <Input name="make" placeholder="Make" value={form.make} onChange={handleChange} />
-            <Input name="model" placeholder="Model" value={form.model} onChange={handleChange} />
-            <Input name="trailer_type" placeholder="Trailer Type" value={form.trailer_type} onChange={handleChange} />
+            <Input
+              name="vin"
+              placeholder="VIN (17 chars)"
+              pattern=".{17}"
+              value={form.vin}
+              onChange={handleChange}
+            />
+            <Input
+              name="year"
+              placeholder="Year"
+              inputMode="numeric"
+              value={form.year}
+              onChange={handleChange}
+            />
+            <Input
+              name="make"
+              placeholder="Make"
+              value={form.make}
+              onChange={handleChange}
+            />
+            <Input
+              name="model"
+              placeholder="Model"
+              value={form.model}
+              onChange={handleChange}
+            />
+            <Input
+              name="trailer_type"
+              placeholder="Trailer Type"
+              value={form.trailer_type}
+              onChange={handleChange}
+            />
             <div className="md:col-span-2 flex justify-end">
-              <Button type="submit" disabled={adding}>{adding ? "Adding..." : "Add Vehicle"}</Button>
+              <Button type="submit" disabled={adding}>
+                {adding ? "Adding..." : "Add Vehicle"}
+              </Button>
             </div>
           </form>
         </CardContent>

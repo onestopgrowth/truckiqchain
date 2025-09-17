@@ -55,8 +55,9 @@ export default function PostLoadPage() {
       </div>
       <Card>
         <CardContent>
-          <form onSubmit={submit} className="grid md:grid-cols-3 gap-4 text-sm">
-            <div className="grid gap-1.5 md:col-span-3">
+          <form onSubmit={submit} className="space-y-8">
+            {/* Title Section */}
+            <div className="grid gap-1.5">
               <Label htmlFor="title">Title</Label>
               <Input
                 id="title"
@@ -65,55 +66,84 @@ export default function PostLoadPage() {
                 placeholder="e.g., Dallas, TX → Atlanta, GA — 10k lbs Dry Van"
               />
             </div>
-            <Input required name="origin_city" placeholder="Origin City" />
-            <Input required name="origin_state" placeholder="Origin State" />
-            <Input name="origin_zip" placeholder="Origin ZIP" />
-            <Input
-              required
-              name="destination_city"
-              placeholder="Destination City"
-            />
-            <Input
-              required
-              name="destination_state"
-              placeholder="Destination State"
-            />
-            <Input name="destination_zip" placeholder="Destination ZIP" />
-            <Input
-              type="datetime-local"
-              name="pickup_earliest"
-              placeholder="Pickup Earliest"
-            />
-            <Input
-              type="datetime-local"
-              name="pickup_latest"
-              placeholder="Pickup Latest"
-            />
-            <Input
-              type="datetime-local"
-              name="delivery_earliest"
-              placeholder="Delivery Earliest"
-            />
-            <Input
-              type="datetime-local"
-              name="delivery_latest"
-              placeholder="Delivery Latest"
-            />
-            <Input
-              name="equipment_required"
-              placeholder="Equipment (comma list)"
-              className="md:col-span-3"
-            />
-            <Input name="weight_lbs" placeholder="Weight (lbs)" />
-            <Input name="pieces" placeholder="Pieces" />
-            <Input name="length_feet" placeholder="Length (ft)" />
-            <Textarea
-              name="notes"
-              placeholder="Notes"
-              className="md:col-span-3"
-            />
-            {error && <div className="text-red-600 md:col-span-3">{error}</div>}
-            <div className="md:col-span-3 flex justify-end">
+
+            {/* Origin & Destination Section */}
+            <fieldset className="border rounded-lg p-4 grid md:grid-cols-3 gap-4">
+              <legend className="font-semibold text-base mb-2 px-2">Origin & Destination</legend>
+              <Input required name="origin_city" placeholder="Origin City" />
+              <Input required name="origin_state" placeholder="Origin State" />
+              <Input name="origin_zip" placeholder="Origin ZIP" />
+              <Input required name="destination_city" placeholder="Destination City" />
+              <Input required name="destination_state" placeholder="Destination State" />
+              <Input name="destination_zip" placeholder="Destination ZIP" />
+            </fieldset>
+
+            {/* Date Section */}
+            <fieldset className="border rounded-lg p-4 grid md:grid-cols-4 gap-4">
+              <legend className="font-semibold text-base mb-2 px-2">Pickup & Delivery Dates</legend>
+              <div className="grid gap-1.5">
+                <Label htmlFor="pickup_earliest">Pickup Earliest</Label>
+                <Input
+                  type="datetime-local"
+                  id="pickup_earliest"
+                  name="pickup_earliest"
+                  placeholder="Pickup Earliest"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="pickup_latest">Pickup Latest</Label>
+                <Input
+                  type="datetime-local"
+                  id="pickup_latest"
+                  name="pickup_latest"
+                  placeholder="Pickup Latest"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="delivery_earliest">Delivery Earliest</Label>
+                <Input
+                  type="datetime-local"
+                  id="delivery_earliest"
+                  name="delivery_earliest"
+                  placeholder="Delivery Earliest"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="delivery_latest">Delivery Latest</Label>
+                <Input
+                  type="datetime-local"
+                  id="delivery_latest"
+                  name="delivery_latest"
+                  placeholder="Delivery Latest"
+                />
+              </div>
+            </fieldset>
+
+            {/* Load Details Section */}
+            <fieldset className="border rounded-lg p-4 grid md:grid-cols-4 gap-4">
+              <legend className="font-semibold text-base mb-2 px-2">Load Details</legend>
+              <Input
+                name="equipment_required"
+                placeholder="Equipment (comma list)"
+                className="md:col-span-2"
+              />
+              <Input name="weight_lbs" placeholder="Weight (lbs)" />
+              <Input name="pieces" placeholder="Pieces" />
+              <Input name="length_feet" placeholder="Length (ft)" />
+            </fieldset>
+
+            {/* Notes Section */}
+            <div className="grid gap-1.5">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                placeholder="Notes"
+              />
+            </div>
+
+            {error && <div className="text-red-600">{error}</div>}
+            <div className="flex justify-end">
               <Button type="submit" disabled={loading}>
                 {loading ? "Posting..." : "Post Load"}
               </Button>

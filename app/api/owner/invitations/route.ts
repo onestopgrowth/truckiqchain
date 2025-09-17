@@ -12,21 +12,30 @@ export async function POST(req: Request) {
     const {
       data: { user },
     } = await sb.auth.getUser();
-    if (!user)
+    if (!user) {
+      console.error("[INVITE] No user in session");
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    }
     const body = await req.json();
     const { carrier_user_id, load_id } = body || {};
-    if (!carrier_user_id || !load_id)
+    console.log("[INVITE] Incoming payload", body);
+    if (!carrier_user_id || !load_id) {
+      console.error("[INVITE] Missing fields", { carrier_user_id, load_id });
       return NextResponse.json({ error: "missing_fields" }, { status: 400 });
+    }
 
     // Verify load belongs to current user
-    const { data: load } = await sb
+    const { data: load, error: loadErr } = await sb
       .from("loads")
       .select("id,user_id,status")
       .eq("id", load_id)
       .single();
-    if (!load || load.user_id !== user.id)
+    console.log("[INVITE] Load query result", { load, loadErr });
+    if (loadErr) console.error("[INVITE] Load fetch error", loadErr);
+    if (!load || load.user_id !== user.id) {
+      console.error("[INVITE] Forbidden: load not found or not owned", { load, userId: user.id });
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
 
     // Preferred: directly create an assignment in requested status (owner-initiated)
     // Need the carrier profile id
@@ -35,13 +44,18 @@ export async function POST(req: Request) {
       .select("id")
       .eq("user_id", carrier_user_id)
       .maybeSingle();
-    if (cpErr)
+    console.log("[INVITE] Carrier profile query result", { cp, cpErr });
+    if (cpErr) {
+      console.error("[INVITE] Carrier profile fetch error", cpErr);
       return NextResponse.json({ error: cpErr.message }, { status: 400 });
-    if (!cp)
+    }
+    if (!cp) {
+      console.error("[INVITE] Carrier profile missing", { carrier_user_id });
       return NextResponse.json(
         { error: "carrier_profile_missing" },
         { status: 400 }
       );
+    }
     const { error: asgErr } = await sb
       .from("assignments")
       .insert({
@@ -49,11 +63,15 @@ export async function POST(req: Request) {
         carrier_user_id,
         carrier_profile_id: cp.id,
         status: "requested",
+  assignment_type: "owner_invite",
       });
+    if (asgErr) {
+      console.error("[INVITE] Assignment insert error", asgErr);
+    }
     if (!asgErr) {
       // fire-and-forget notification to carrier
-  notifyOwnerInvite({ carrierUserId: carrier_user_id, loadId: load_id, client: sb as any }).catch(
-        () => {}
+      notifyOwnerInvite({ carrierUserId: carrier_user_id, loadId: load_id, client: sb as any }).catch(
+        (e) => console.error("[INVITE] Notification error", e)
       );
       return NextResponse.json({ ok: true, via: "assignments" });
     }

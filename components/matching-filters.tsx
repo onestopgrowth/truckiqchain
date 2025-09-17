@@ -2,13 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState } from "react"
 
 const equipmentTypes = [
-  { value: "", label: "All Equipment" },
   { value: "flatbed", label: "Flatbed" },
   { value: "dry_van", label: "Dry Van" },
   { value: "refrigerated", label: "Refrigerated" },
@@ -21,7 +21,6 @@ const equipmentTypes = [
 ]
 
 const availabilityOptions = [
-  { value: "", label: "All Statuses" },
   { value: "available", label: "Available" },
   { value: "busy", label: "Busy" },
   { value: "unavailable", label: "Unavailable" },
@@ -31,10 +30,10 @@ export function MatchingFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [equipment, setEquipment] = useState(searchParams.get("equipment") || "")
+  const [equipment, setEquipment] = useState<string | undefined>(searchParams.get("equipment") || undefined)
   const [minXp, setMinXp] = useState(searchParams.get("minXp") || "")
   const [location, setLocation] = useState(searchParams.get("location") || "")
-  const [availability, setAvailability] = useState(searchParams.get("availability") || "")
+  const [availability, setAvailability] = useState<string | undefined>(searchParams.get("availability") || undefined)
 
   const applyFilters = () => {
     const params = new URLSearchParams()
@@ -47,20 +46,21 @@ export function MatchingFilters() {
   }
 
   const clearFilters = () => {
-    setEquipment("")
+    setEquipment(undefined)
     setMinXp("")
     setLocation("")
-    setAvailability("")
+    setAvailability(undefined)
     router.push("/dashboard/matching")
   }
 
   return (
     <div className="space-y-4">
+      {/* Filter fields */}
       <div className="space-y-2">
         <Label htmlFor="equipment">Equipment Type</Label>
         <Select value={equipment} onValueChange={setEquipment}>
           <SelectTrigger>
-            <SelectValue placeholder="Select equipment" />
+            <SelectValue placeholder="All Equipment" />
           </SelectTrigger>
           <SelectContent>
             {equipmentTypes.map((type) => (
@@ -99,7 +99,7 @@ export function MatchingFilters() {
         <Label htmlFor="availability">Availability</Label>
         <Select value={availability} onValueChange={setAvailability}>
           <SelectTrigger>
-            <SelectValue placeholder="Select status" />
+            <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
             {availabilityOptions.map((option) => (
@@ -111,8 +111,8 @@ export function MatchingFilters() {
         </Select>
       </div>
 
-      <div className="flex gap-2">
-        <Button onClick={applyFilters} className="flex-1">
+      <div className="flex gap-2 justify-end items-center mt-4">
+        <Button onClick={applyFilters}>
           Apply Filters
         </Button>
         <Button onClick={clearFilters} variant="outline">

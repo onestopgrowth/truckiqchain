@@ -94,7 +94,6 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
     setIsLoading(true);
     setError(null);
 
-
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");

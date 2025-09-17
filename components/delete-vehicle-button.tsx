@@ -17,7 +17,12 @@ export function DeleteVehicleButton({ id }: { id: string }) {
 
   return (
     <>
-      <Button variant="destructive" size="sm" onClick={() => setOpen(true)} disabled={loading}>
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={() => setOpen(true)}
+        disabled={loading}
+      >
         Delete
       </Button>
       <ConfirmModal

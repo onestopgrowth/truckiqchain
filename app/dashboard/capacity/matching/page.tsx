@@ -1,15 +1,12 @@
+
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import Link from "next/link";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { MatchingFilters } from "@/components/matching-filters";
+import { OfferButton } from "@/components/offer-button";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+
 
 interface SearchParams {
   equipment?: string;
@@ -20,13 +17,17 @@ interface SearchParams {
 
 export const dynamic = "force-dynamic";
 
-export default async function CapacityMatchingPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
+
+
+export default async function CapacityMatchingPage({ searchParams }: { searchParams: SearchParams | Promise<SearchParams> }) {
   const supabase = await createServerClient();
-  const params = await searchParams;
+  // Support both direct object and Promise (for server navigation)
+  let params: SearchParams;
+  if (typeof searchParams === "object" && searchParams !== null && "then" in searchParams) {
+    params = await (searchParams as Promise<SearchParams>);
+  } else {
+    params = searchParams as SearchParams;
+  }
 
   const { data, error } = await supabase.auth.getUser();
   if (error || !data?.user) redirect("/auth/login");
@@ -62,6 +63,18 @@ export default async function CapacityMatchingPage({
     .eq("user_id", data.user.id)
     .in("status", ["open", "accepted", "booked"]);
 
+  // Fetch assignments for these loads to check if an offer has already been sent to each carrier
+  const loadIds = (loads || []).map((l: any) => l.id);
+  let assignments: any[] = [];
+  if (loadIds.length > 0) {
+    const { data: asgs } = await supabase
+      .from("assignments")
+      .select("id,load_id,carrier_user_id,assignment_type")
+      .in("load_id", loadIds)
+      .eq("assignment_type", "owner_invite");
+    assignments = asgs || [];
+  }
+
   // Simple scoring: equipment match (+40), state lane hint (+20), verified (+30), normalized XP (+0..10)
   function scoreCarrier(carrier: any) {
     let s = 0;
@@ -79,183 +92,65 @@ export default async function CapacityMatchingPage({
       (l) =>
         l.origin_state &&
         carrier.location_state &&
-        l.origin_state.toLowerCase() ===
-          String(carrier.location_state).toLowerCase()
+        l.origin_state === carrier.location_state
     );
     if (hasStateHint) s += 20;
-    if (carrier.is_verified) s += 30;
-    const xp = Math.max(0, Math.min(100, Number(carrier.xp_score || 0)));
-    s += Math.round(xp / 10);
+    if (carrier.verified) s += 30;
+    s += Math.min(10, Math.max(0, Number(carrier.xp_score) || 0));
     return s;
   }
+
   const carriers = (carriersRaw || [])
-    .map((c) => ({ ...c, __score: scoreCarrier(c) }))
-    .sort((a, b) => b.__score - a.__score);
+    .map((c: any) => ({ ...c, _score: scoreCarrier(c) }))
+    .sort((a: any, b: any) => b._score - a._score);
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Find Carriers</h1>
-          <p className="text-muted-foreground">Search and send load offers</p>
-        </div>
-        <Button asChild variant="ghost">
-          <Link href="/dashboard/capacity">Back to Dashboard</Link>
-        </Button>
+    <div className="max-w-5xl mx-auto py-8 space-y-8">
+      {/* Header row with Back to Dashboard button */}
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Capacity Matching</h1>
+        <Link href="/dashboard">
+          <Button variant="outline" size="sm">Back to Dashboard</Button>
+        </Link>
       </div>
-
-      <div className="grid gap-6 lg:grid-cols-4">
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
-              <CardDescription>Refine carriers</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MatchingFilters />
-            </CardContent>
-          </Card>
-        </div>
-        <div className="lg:col-span-3">
-          {!carriers || carriers.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                No matching carriers.
+      <MatchingFilters />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {carriers.length === 0 && (
+          <div className="col-span-full text-center text-muted-foreground">No matching carriers found.</div>
+        )}
+        {carriers.map((carrier: any) => {
+          // Check if an offer has already been sent to this carrier for any of the user's loads
+          const offerSent = assignments.some(
+            (asg) => asg.carrier_user_id === carrier.user_id
+          );
+          return (
+            <Card key={carrier.id}>
+              <CardHeader>
+                <CardTitle>{carrier.profiles?.company_name || "Unknown Carrier"}</CardTitle>
+                <CardDescription>
+                  {carrier.profiles?.email} | {carrier.profiles?.phone}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-2">
+                  <span className="font-semibold">Equipment:</span> {carrier.equipment_type || "N/A"}
+                </div>
+                <div className="mb-2">
+                  <span className="font-semibold">Location:</span> {carrier.location_city}, {carrier.location_state}
+                </div>
+                <div className="mb-2">
+                  <span className="font-semibold">XP Score:</span> {carrier.xp_score}
+                </div>
+                <div className="mb-2">
+                  <span className="font-semibold">Availability:</span> {carrier.availability_status}
+                </div>
+                <OfferButton carrierUserId={carrier.user_id} loads={loads || []} offerSent={offerSent} />
               </CardContent>
             </Card>
-          ) : (
-            <div className="grid gap-4">
-              {carriers.map((carrier) => (
-                <Card key={carrier.id} className="hover:shadow-sm">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">
-                          {carrier.profiles?.company_name || "Carrier"}
-                        </CardTitle>
-                        <CardDescription>
-                          {carrier.location_city}, {carrier.location_state}
-                        </CardDescription>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>XP {carrier.xp_score}</span>
-                        <span className="inline-block bg-muted rounded px-2 py-0.5">
-                          Score {carrier.__score}
-                        </span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between items-center">
-                      <div className="text-sm text-muted-foreground">
-                        Equipment: {carrier.equipment_type?.replace("_", " ")}
-                      </div>
-                      <OfferButton
-                        carrierUserId={carrier.user_id}
-                        loads={loads || []}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-("use client");
-import * as React from "react";
-import { useTransition } from "react";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
-
-function OfferButton({
-  carrierUserId,
-  loads,
-}: {
-  carrierUserId: string;
-  loads: any[];
-}) {
-  const [open, setOpen] = React.useState(false);
-  return (
-    <>
-      <Button size="sm" onClick={() => setOpen(true)}>
-        Send Load Offer
-      </Button>
-      {open && (
-        <OfferModal
-          onClose={() => setOpen(false)}
-          carrierUserId={carrierUserId}
-          loads={loads}
-        />
-      )}
-    </>
-  );
-}
-
-function OfferModal({
-  onClose,
-  carrierUserId,
-  loads,
-}: {
-  onClose: () => void;
-  carrierUserId: string;
-  loads: any[];
-}) {
-  const [selected, setSelected] = React.useState<string>("");
-  const [pending, start] = useTransition();
-  async function sendOffer() {
-    if (!selected) return;
-    start(async () => {
-      const res = await fetch("/api/owner/invitations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          carrier_user_id: carrierUserId,
-          load_id: selected,
-        }),
-      });
-      if (res.ok) onClose();
-    });
-  }
-  return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-      <div className="bg-background w-full max-w-md rounded-md border p-4 space-y-4">
-        <h3 className="font-semibold">Send Load Offer</h3>
-        <div className="text-xs text-muted-foreground">
-          Choose one of your open/active loads to offer this carrier.
-        </div>
-        <Select onValueChange={setSelected}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a load" />
-          </SelectTrigger>
-          <SelectContent>
-            {loads.map((l) => (
-              <SelectItem key={l.id} value={l.id}>
-                {l.title ||
-                  `${l.origin_city}, ${l.origin_state} → ${l.destination_city}, ${l.destination_state}`}{" "}
-                ({l.status})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button disabled={!selected || pending} onClick={sendOffer}>
-            {pending ? "Sending…" : "Send Offer"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
