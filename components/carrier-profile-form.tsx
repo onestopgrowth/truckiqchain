@@ -94,6 +94,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
     setIsLoading(true);
     setError(null);
 
+
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not authenticated");
@@ -105,6 +106,7 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           : formData.availability_status;
 
       const profileData = {
+        id: initialData?.id, // Always send the correct carrier_profile id for updates
         user_id: user.user.id,
         ...formData,
         availability_status: effectiveStatus,
@@ -393,8 +395,10 @@ export function CarrierProfileForm({ initialData }: CarrierProfileFormProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-                <DocumentsStatus refreshKey={refreshKey} />
-              <DocumentUploader onUploaded={() => setRefreshKey(k => k + 1)} />
+              <DocumentsStatus refreshKey={refreshKey} />
+              <DocumentUploader
+                onUploaded={() => setRefreshKey((k) => k + 1)}
+              />
             </div>
           </CardContent>
         </Card>

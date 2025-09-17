@@ -1,29 +1,35 @@
 "use client";
-import { useTransition } from "react";
+import { useState } from "react";
+import { ConfirmModal } from "@/components/confirm-modal";
+import { Button } from "@/components/ui/button";
 
 export function DeleteVehicleButton({ id }: { id: string }) {
-  const [isPending, start] = useTransition();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    setLoading(true);
+    await fetch(`/api/carrier-vehicles/${id}`, { method: "DELETE" });
+    setLoading(false);
+    setOpen(false);
+    location.reload();
+  };
+
   return (
-    <form
-      action={async () => {
-        start(() => {});
-        await fetch(`/api/carrier-vehicles/${id}`, { method: "DELETE" });
-        // FRAGILE: best to refresh via router.refresh() from parent; here we rely on navigating to same page
-        location.reload();
-      }}
-      className="inline"
-    >
-      <button
-        type="button"
-        className="text-red-600"
-        onClick={async () => {
-          if (!confirm("Delete vehicle?")) return;
-          await fetch(`/api/carrier-vehicles/${id}`, { method: "DELETE" });
-          location.reload();
-        }}
-      >
-        {isPending ? "Deleting..." : "Delete"}
-      </button>
-    </form>
+    <>
+      <Button variant="destructive" size="sm" onClick={() => setOpen(true)} disabled={loading}>
+        Delete
+      </Button>
+      <ConfirmModal
+        open={open}
+        title="Delete Vehicle?"
+        description="Are you sure you want to delete this vehicle? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleDelete}
+        onCancel={() => setOpen(false)}
+        loading={loading}
+      />
+    </>
   );
 }

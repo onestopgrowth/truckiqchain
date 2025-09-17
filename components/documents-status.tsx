@@ -12,7 +12,6 @@ type DocRecord = {
 
 const REQUIRED = ["w9", "coi", "authority"];
 
-
 export function DocumentsStatus({ refreshKey = 0 }: { refreshKey?: number }) {
   const [docs, setDocs] = useState<Record<string, DocRecord | null>>({});
   const [loading, setLoading] = useState(false);

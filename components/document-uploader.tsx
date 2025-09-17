@@ -2,7 +2,13 @@
 import React, { useState, useCallback } from "react";
 import { Button } from "./ui/button";
 
-export function DocumentUploader({ onUploaded, refetch }: { onUploaded?: () => void; refetch?: () => void }) {
+export function DocumentUploader({
+  onUploaded,
+  refetch,
+}: {
+  onUploaded?: () => void;
+  refetch?: () => void;
+}) {
   const [file, setFile] = useState<File | null>(null);
   const [type, setType] = useState<string>("w9");
   const [loading, setLoading] = useState(false);
@@ -26,9 +32,9 @@ export function DocumentUploader({ onUploaded, refetch }: { onUploaded?: () => v
         const body = await resp.json().catch(() => ({}));
         throw new Error(body?.error || "Upload failed");
       }
-  setMessage("Uploaded");
-  onUploaded?.();
-  refetch?.();
+      setMessage("Uploaded");
+      onUploaded?.();
+      refetch?.();
     } catch (err: unknown) {
       setMessage(err instanceof Error ? err.message : "Upload failed");
     } finally {
