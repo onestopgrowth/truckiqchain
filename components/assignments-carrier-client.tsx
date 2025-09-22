@@ -16,15 +16,20 @@ export function CarrierActions({ id, status }: { id: string; status: string }) {
   }
   return (
     <div className="flex gap-2">
+      {s === "requested" && (
+        <>
+          <Button size="sm" variant="default" onClick={() => act("accept")}>Approve</Button>
+          <Button size="sm" variant="outline" onClick={() => act("reject")}>Reject</Button>
+        </>
+      )}
+      {s === "accepted" && (
+        <Button size="sm" variant="default" onClick={() => act("book")}>Accept Assignment</Button>
+      )}
       {s === "booked" && (
-        <Button size="sm" onClick={() => act("start")}>
-          Start Transit
-        </Button>
+        <Button size="sm" variant="default" onClick={() => act("start")}>Start Transit</Button>
       )}
       {s === "in_transit" && (
-        <Button size="sm" onClick={() => act("deliver")}>
-          Mark Delivered
-        </Button>
+        <Button size="sm" variant="default" onClick={() => act("deliver")}>Mark Delivered</Button>
       )}
     </div>
   );

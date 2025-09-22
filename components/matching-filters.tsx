@@ -1,12 +1,18 @@
-"use client"
+"use client";
 
-import { useRouter, useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useState } from "react";
 
 const equipmentTypes = [
   { value: "flatbed", label: "Flatbed" },
@@ -18,40 +24,44 @@ const equipmentTypes = [
   { value: "step_deck", label: "Step Deck" },
   { value: "double_drop", label: "Double Drop" },
   { value: "removable_gooseneck", label: "Removable Gooseneck" },
-]
+];
 
 const availabilityOptions = [
   { value: "available", label: "Available" },
   { value: "busy", label: "Busy" },
   { value: "unavailable", label: "Unavailable" },
-]
+];
 
 export function MatchingFilters() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [equipment, setEquipment] = useState<string | undefined>(searchParams.get("equipment") || undefined)
-  const [minXp, setMinXp] = useState(searchParams.get("minXp") || "")
-  const [location, setLocation] = useState(searchParams.get("location") || "")
-  const [availability, setAvailability] = useState<string | undefined>(searchParams.get("availability") || undefined)
+  const [equipment, setEquipment] = useState<string | undefined>(
+    searchParams.get("equipment") || undefined
+  );
+  const [minXp, setMinXp] = useState(searchParams.get("minXp") || "");
+  const [location, setLocation] = useState(searchParams.get("location") || "");
+  const [availability, setAvailability] = useState<string | undefined>(
+    searchParams.get("availability") || undefined
+  );
 
   const applyFilters = () => {
-    const params = new URLSearchParams()
-    if (equipment) params.set("equipment", equipment)
-    if (minXp) params.set("minXp", minXp)
-    if (location) params.set("location", location)
-    if (availability) params.set("availability", availability)
+    const params = new URLSearchParams();
+    if (equipment) params.set("equipment", equipment);
+    if (minXp) params.set("minXp", minXp);
+    if (location) params.set("location", location);
+    if (availability) params.set("availability", availability);
 
-    router.push(`/dashboard/matching?${params.toString()}`)
-  }
+    router.push(`/dashboard/matching?${params.toString()}`);
+  };
 
   const clearFilters = () => {
-    setEquipment(undefined)
-    setMinXp("")
-    setLocation("")
-    setAvailability(undefined)
-    router.push("/dashboard/matching")
-  }
+    setEquipment(undefined);
+    setMinXp("");
+    setLocation("");
+    setAvailability(undefined);
+    router.push("/dashboard/matching");
+  };
 
   return (
     <div className="space-y-4">
@@ -112,13 +122,11 @@ export function MatchingFilters() {
       </div>
 
       <div className="flex gap-2 justify-end items-center mt-4">
-        <Button onClick={applyFilters}>
-          Apply Filters
-        </Button>
+        <Button onClick={applyFilters}>Apply Filters</Button>
         <Button onClick={clearFilters} variant="outline">
           Clear
         </Button>
       </div>
     </div>
-  )
+  );
 }

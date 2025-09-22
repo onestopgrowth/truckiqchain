@@ -69,18 +69,30 @@ export default function PostLoadPage() {
 
             {/* Origin & Destination Section */}
             <fieldset className="border rounded-lg p-4 grid md:grid-cols-3 gap-4">
-              <legend className="font-semibold text-base mb-2 px-2">Origin & Destination</legend>
+              <legend className="font-semibold text-base mb-2 px-2">
+                Origin & Destination
+              </legend>
               <Input required name="origin_city" placeholder="Origin City" />
               <Input required name="origin_state" placeholder="Origin State" />
               <Input name="origin_zip" placeholder="Origin ZIP" />
-              <Input required name="destination_city" placeholder="Destination City" />
-              <Input required name="destination_state" placeholder="Destination State" />
+              <Input
+                required
+                name="destination_city"
+                placeholder="Destination City"
+              />
+              <Input
+                required
+                name="destination_state"
+                placeholder="Destination State"
+              />
               <Input name="destination_zip" placeholder="Destination ZIP" />
             </fieldset>
 
             {/* Date Section */}
             <fieldset className="border rounded-lg p-4 grid md:grid-cols-4 gap-4">
-              <legend className="font-semibold text-base mb-2 px-2">Pickup & Delivery Dates</legend>
+              <legend className="font-semibold text-base mb-2 px-2">
+                Pickup & Delivery Dates
+              </legend>
               <div className="grid gap-1.5">
                 <Label htmlFor="pickup_earliest">Pickup Earliest</Label>
                 <Input
@@ -121,7 +133,9 @@ export default function PostLoadPage() {
 
             {/* Load Details Section */}
             <fieldset className="border rounded-lg p-4 grid md:grid-cols-4 gap-4">
-              <legend className="font-semibold text-base mb-2 px-2">Load Details</legend>
+              <legend className="font-semibold text-base mb-2 px-2">
+                Load Details
+              </legend>
               <Input
                 name="equipment_required"
                 placeholder="Equipment (comma list)"
@@ -135,11 +149,7 @@ export default function PostLoadPage() {
             {/* Notes Section */}
             <div className="grid gap-1.5">
               <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                name="notes"
-                placeholder="Notes"
-              />
+              <Textarea id="notes" name="notes" placeholder="Notes" />
             </div>
 
             {error && <div className="text-red-600">{error}</div>}

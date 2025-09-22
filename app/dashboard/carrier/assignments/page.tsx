@@ -22,9 +22,9 @@ export default async function CarrierAssignmentsPage() {
 
   const { data } = await sb
     .from("assignments")
-    .select("id,load_id,status,booked_at,in_transit_at,delivered_at")
+    .select("id,load_id,status,created_at,booked_at,in_transit_at,delivered_at")
     .eq("carrier_user_id", user.id)
-    .order("booked_at", { ascending: false });
+    .order("created_at", { ascending: false });
   const rows = data || [];
   return (
     <div className="container mx-auto p-6 space-y-4">
@@ -36,13 +36,14 @@ export default async function CarrierAssignmentsPage() {
       </div>
       <div className="grid gap-4">
         {rows.map((r) => (
-          <Card key={r.id}>
-            <CardHeader className="py-3">
-              <CardTitle className="text-base">
-                Assignment {r.id.slice(0, 8)}{" "}
-                <span className="text-xs font-normal text-muted-foreground">
-                  ({r.status})
-                </span>
+          <Card key={r.id} className={r.status === "requested" ? "border-2 border-yellow-400 bg-yellow-50" : ""}>
+            <CardHeader className="py-3 flex flex-row items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                Assignment {r.id.slice(0, 8)}
+                {r.status === "requested" && (
+                  <span className="inline-block px-2 py-0.5 text-xs rounded bg-yellow-300 text-yellow-900 font-semibold">New Offer</span>
+                )}
+                <span className="text-xs font-normal text-muted-foreground">({r.status})</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="text-xs space-y-2">

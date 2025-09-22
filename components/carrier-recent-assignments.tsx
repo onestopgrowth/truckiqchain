@@ -15,6 +15,8 @@ type Item = {
 };
 
 const statusColor: Record<string, string> = {
+  rejected:
+    "bg-red-100 text-red-700 border border-red-300 dark:bg-red-600/20 dark:text-red-300 dark:border-red-700",
   requested:
     "bg-amber-100 text-amber-700 border border-amber-300 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-700",
   accepted:
@@ -39,6 +41,7 @@ const FILTERS = [
   "in_transit",
   "delivered",
   "completed",
+  "rejected",
 ];
 
 export default function CarrierRecentAssignments({ items }: { items: Item[] }) {
@@ -83,15 +86,46 @@ export default function CarrierRecentAssignments({ items }: { items: Item[] }) {
                 l?.destination_city ?? "?"
               }, ${l?.destination_state ?? "?"}`;
             const pill = statusColor[a.status] || statusColor["requested"];
+            // Local state for status update
+            const [status, setStatus] = React.useState(a.status);
+            async function act(action: string) {
+              const res = await fetch(`/api/assignments/${a.id}/status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action }),
+              });
+              if (res.ok) {
+                const json = await res.json();
+                setStatus(json.status);
+              }
+            }
             return (
               <li
                 key={a.id}
                 className="flex items-center justify-between gap-3 border rounded px-3 py-2"
               >
                 <span className="truncate">{lane}</span>
-                <span className={`text-[10px] rounded-full px-2 py-0.5 ${pill}`}>
-                  {a.status.replace("_", " ")}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] rounded-full px-2 py-0.5 ${statusColor[status] || pill}`}>
+                    {status.replace("_", " ")}
+                  </span>
+                  {/* Action buttons for each status */}
+                  {status === "requested" && (
+                    <>
+                      <button className="text-xs px-2 py-1 rounded bg-green-600 text-white cursor-pointer hover:bg-green-700 transition" onClick={() => act("accept")}>Approve</button>
+                      <button className="text-xs px-2 py-1 rounded bg-red-600 text-white cursor-pointer hover:bg-red-700 transition" onClick={() => act("reject")}>Reject</button>
+                    </>
+                  )}
+                  {status === "accepted" && (
+                    <button className="text-xs px-2 py-1 rounded bg-blue-600 text-white cursor-pointer hover:bg-blue-700 transition" onClick={() => act("book")}>Accept Assignment</button>
+                  )}
+                  {status === "booked" && (
+                    <button className="text-xs px-2 py-1 rounded bg-purple-600 text-white cursor-pointer hover:bg-purple-700 transition" onClick={() => act("start")}>Start Transit</button>
+                  )}
+                  {status === "in_transit" && (
+                    <button className="text-xs px-2 py-1 rounded bg-slate-600 text-white cursor-pointer hover:bg-slate-700 transition" onClick={() => act("deliver")}>Mark Delivered</button>
+                  )}
+                </div>
               </li>
             );
           })}

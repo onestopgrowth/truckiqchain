@@ -1,12 +1,16 @@
-
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 import { MatchingFilters } from "@/components/matching-filters";
 import { OfferButton } from "@/components/offer-button";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-
 
 interface SearchParams {
   equipment?: string;
@@ -17,13 +21,19 @@ interface SearchParams {
 
 export const dynamic = "force-dynamic";
 
-
-
-export default async function CapacityMatchingPage({ searchParams }: { searchParams: SearchParams | Promise<SearchParams> }) {
+export default async function CapacityMatchingPage({
+  searchParams,
+}: {
+  searchParams: SearchParams | Promise<SearchParams>;
+}) {
   const supabase = await createServerClient();
   // Support both direct object and Promise (for server navigation)
   let params: SearchParams;
-  if (typeof searchParams === "object" && searchParams !== null && "then" in searchParams) {
+  if (
+    typeof searchParams === "object" &&
+    searchParams !== null &&
+    "then" in searchParams
+  ) {
     params = await (searchParams as Promise<SearchParams>);
   } else {
     params = searchParams as SearchParams;
@@ -110,13 +120,17 @@ export default async function CapacityMatchingPage({ searchParams }: { searchPar
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Capacity Matching</h1>
         <Link href="/dashboard">
-          <Button variant="outline" size="sm">Back to Dashboard</Button>
+          <Button variant="outline" size="sm">
+            Back to Dashboard
+          </Button>
         </Link>
       </div>
       <MatchingFilters />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {carriers.length === 0 && (
-          <div className="col-span-full text-center text-muted-foreground">No matching carriers found.</div>
+          <div className="col-span-full text-center text-muted-foreground">
+            No matching carriers found.
+          </div>
         )}
         {carriers.map((carrier: any) => {
           // Check if an offer has already been sent to this carrier for any of the user's loads
@@ -126,25 +140,35 @@ export default async function CapacityMatchingPage({ searchParams }: { searchPar
           return (
             <Card key={carrier.id}>
               <CardHeader>
-                <CardTitle>{carrier.profiles?.company_name || "Unknown Carrier"}</CardTitle>
+                <CardTitle>
+                  {carrier.profiles?.company_name || "Unknown Carrier"}
+                </CardTitle>
                 <CardDescription>
                   {carrier.profiles?.email} | {carrier.profiles?.phone}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="mb-2">
-                  <span className="font-semibold">Equipment:</span> {carrier.equipment_type || "N/A"}
+                  <span className="font-semibold">Equipment:</span>{" "}
+                  {carrier.equipment_type || "N/A"}
                 </div>
                 <div className="mb-2">
-                  <span className="font-semibold">Location:</span> {carrier.location_city}, {carrier.location_state}
+                  <span className="font-semibold">Location:</span>{" "}
+                  {carrier.location_city}, {carrier.location_state}
                 </div>
                 <div className="mb-2">
-                  <span className="font-semibold">XP Score:</span> {carrier.xp_score}
+                  <span className="font-semibold">XP Score:</span>{" "}
+                  {carrier.xp_score}
                 </div>
                 <div className="mb-2">
-                  <span className="font-semibold">Availability:</span> {carrier.availability_status}
+                  <span className="font-semibold">Availability:</span>{" "}
+                  {carrier.availability_status}
                 </div>
-                <OfferButton carrierUserId={carrier.user_id} loads={loads || []} offerSent={offerSent} />
+                <OfferButton
+                  carrierUserId={carrier.user_id}
+                  loads={loads || []}
+                  offerSent={offerSent}
+                />
               </CardContent>
             </Card>
           );
@@ -153,4 +177,3 @@ export default async function CapacityMatchingPage({ searchParams }: { searchPar
     </div>
   );
 }
-

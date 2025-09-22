@@ -41,7 +41,17 @@ export default async function DashboardPage() {
   // If carrier, fetch a few recent assignments to surface on the dashboard
   let carrierAssignments: any[] = [];
   if ((profile?.role ?? null) === "carrier") {
-    const { data: carr } = await supabase
+    // Debug: fetch assignments without join
+    const { data: assignmentsOnly, error: assignmentsError } = await supabase
+      .from("assignments")
+      .select("*")
+      .eq("carrier_user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    console.log("[DEBUG] assignmentsOnly", assignmentsOnly, assignmentsError);
+
+    // Original query with join
+    const { data: carr, error: joinError } = await supabase
       .from("assignments")
       .select(
         `id,status,created_at,load_id,loads ( title,origin_city,origin_state,destination_city,destination_state )`
@@ -49,6 +59,7 @@ export default async function DashboardPage() {
       .eq("carrier_user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(5);
+    console.log("[DEBUG] assignmentsWithJoin", carr, joinError);
     carrierAssignments = carr || [];
   }
 

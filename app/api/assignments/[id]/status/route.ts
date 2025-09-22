@@ -8,20 +8,26 @@ export const dynamic = "force-dynamic";
 // actions owner: accept|decline|book|cancel ; carrier: cancel ; transitions after booked: start (-> in_transit), deliver (-> delivered), complete (-> completed)
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const params = await context.params;
   try {
     const sb = await createMutableServerClient();
     const {
       data: { user },
     } = await sb.auth.getUser();
-    if (!user)
+    if (!user) {
+      console.log("[PATCH] unauthenticated");
       return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    }
     const body = await req.json();
     const action = body.action as string;
     const pod_url = body.pod_url as string | undefined;
-    if (!action)
+    console.log(`[PATCH] assignment status: id=${params.id}, user=${user.id}, action=${action}`);
+    if (!action) {
+      console.log("[PATCH] missing_action");
       return NextResponse.json({ error: "missing_action" }, { status: 400 });
+    }
 
     // fetch assignment + load owner
     const { data: assignment, error } = await sb
@@ -29,8 +35,10 @@ export async function PATCH(
       .select("*")
       .eq("id", params.id)
       .single();
-    if (error || !assignment)
+    if (error || !assignment) {
+      console.log(`[PATCH] assignment not found: id=${params.id}, error=`, error);
       return NextResponse.json({ error: "not_found" }, { status: 404 });
+    }
     const { data: loadRec } = await sb
       .from("loads")
       .select("user_id")
@@ -39,8 +47,11 @@ export async function PATCH(
     const loadOwnerId = loadRec?.user_id;
     const isCarrier = assignment.carrier_user_id === user.id;
     const isOwner = loadOwnerId === user.id;
-    if (!isCarrier && !isOwner)
+    console.log(`[PATCH] isCarrier=${isCarrier}, isOwner=${isOwner}, current=${assignment.status}`);
+    if (!isCarrier && !isOwner) {
+      console.log("[PATCH] forbidden: not carrier or owner");
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    }
 
     const current = assignment.status as string;
     let nextStatus: string | null = null;
@@ -52,7 +63,7 @@ export async function PATCH(
 
     switch (action) {
       case "accept":
-        if (isOwner && current === "requested") {
+        if (isCarrier && current === "requested") {
           set("accepted", "accepted_at");
         }
         break;
@@ -62,7 +73,7 @@ export async function PATCH(
         }
         break;
       case "book":
-        if (isOwner && (current === "accepted" || current === "requested")) {
+        if ((isOwner || isCarrier) && (current === "accepted" || current === "requested")) {
           set("booked", "booked_at");
         }
         break;
@@ -91,13 +102,16 @@ export async function PATCH(
         }
         break;
       default:
+        console.log(`[PATCH] invalid_action: ${action}`);
         return NextResponse.json({ error: "invalid_action" }, { status: 400 });
     }
-    if (!nextStatus)
+    if (!nextStatus) {
+      console.log(`[PATCH] transition_not_allowed: action=${action}, current=${current}, isCarrier=${isCarrier}, isOwner=${isOwner}`);
       return NextResponse.json(
         { error: "transition_not_allowed" },
         { status: 400 }
       );
+    }
 
     const update: any = { status: nextStatus };
     if (timestampField) update[timestampField] = new Date().toISOString();
@@ -106,18 +120,21 @@ export async function PATCH(
       .from("assignments")
       .update(update)
       .eq("id", params.id);
-    if (upErr)
+    if (upErr) {
+      console.log(`[PATCH] update error:`, upErr);
       return NextResponse.json({ error: upErr.message }, { status: 400 });
+    }
     // fire-and-forget notification to the counterparty
     notifyAssignmentTransition({
       assignmentId: params.id,
       action,
       actorUserId: user.id,
       client: sb as any,
-    }).catch(() => {});
+    }).catch((e) => console.log('[PATCH] notifyAssignmentTransition error', e));
+    console.log(`[PATCH] success: id=${params.id}, nextStatus=${nextStatus}`);
     return NextResponse.json({ ok: true, status: nextStatus });
   } catch (e: any) {
-    console.error(e);
+    console.error('[PATCH] server_error', e);
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }

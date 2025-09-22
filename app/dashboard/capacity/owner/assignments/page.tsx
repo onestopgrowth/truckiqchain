@@ -1,3 +1,5 @@
+"use client";
+import * as React from "react";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
